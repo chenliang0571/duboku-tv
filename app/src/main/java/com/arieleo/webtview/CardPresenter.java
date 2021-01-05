@@ -64,16 +64,16 @@ public class CardPresenter extends Presenter {
 
     @Override
     public void onBindViewHolder(Presenter.ViewHolder viewHolder, Object item) {
-        Movie movie = (Movie) item;
+        WebActivity.Item movie = (WebActivity.Item) item;
         ImageCardView cardView = (ImageCardView) viewHolder.view;
 
         Log.d(TAG, "onBindViewHolder");
-        if (movie.getCardImageUrl() != null) {
-            cardView.setTitleText(movie.getTitle());
-            cardView.setContentText(movie.getStudio());
+        if (movie.image != null) {
+            cardView.setTitleText(movie.title);
+            cardView.setContentText(movie.pic_text + " - " + movie.tag);
             cardView.setMainImageDimensions(CARD_WIDTH, CARD_HEIGHT);
             Glide.with(viewHolder.view.getContext())
-                    .load(movie.getCardImageUrl())
+                    .load(movie.image)
                     .centerCrop()
                     .error(mDefaultCardImage)
                     .into(cardView.getMainImageView());

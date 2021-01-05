@@ -17,6 +17,7 @@ import androidx.fragment.app.FragmentActivity;
 
 import com.google.gson.Gson;
 
+import java.io.Serializable;
 import java.util.List;
 
 public class WebActivity extends FragmentActivity {
@@ -76,7 +77,7 @@ public class WebActivity extends FragmentActivity {
             Meta[] data = gson.fromJson(s, Meta[].class);
             Log.d(TAG, "Meta Object length: " + data.length);
             Intent intent = new Intent(this, MainActivity.class);
-            intent.putExtra("meta", s);
+            intent.putExtra("meta", data);
             startActivity(intent);
         } catch (Exception e) {
             Toast.makeText(this, "ERROR:" + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -135,7 +136,8 @@ public class WebActivity extends FragmentActivity {
             WebActivity.this.getWindow().getDecorView().setSystemUiVisibility(FULL_SCREEN_SETTING);
         }
     }
-    class Meta {
+    class Meta implements Serializable {
+        static final long serialVersionUID = 727561609867586888L;
         String category;
         String link;
         List<Item> items;
@@ -148,32 +150,9 @@ public class WebActivity extends FragmentActivity {
                     ", items=" + items +
                     '}';
         }
-
-        public String getCategory() {
-            return category;
-        }
-
-        public void setCategory(String category) {
-            this.category = category;
-        }
-
-        public String getLink() {
-            return link;
-        }
-
-        public void setLink(String link) {
-            this.link = link;
-        }
-
-        public List<Item> getItems() {
-            return items;
-        }
-
-        public void setItems(List<Item> items) {
-            this.items = items;
-        }
     }
-    class Item {
+    class Item implements Serializable {
+        static final long serialVersionUID = 727561609867527564L;
         String title;
         String href;
         String image;
@@ -189,46 +168,6 @@ public class WebActivity extends FragmentActivity {
                     ", tag='" + tag + '\'' +
                     ", pic_text='" + pic_text + '\'' +
                     '}';
-        }
-
-        public String getTitle() {
-            return title;
-        }
-
-        public void setTitle(String title) {
-            this.title = title;
-        }
-
-        public String getHref() {
-            return href;
-        }
-
-        public void setHref(String href) {
-            this.href = href;
-        }
-
-        public String getImage() {
-            return image;
-        }
-
-        public void setImage(String image) {
-            this.image = image;
-        }
-
-        public String getTag() {
-            return tag;
-        }
-
-        public void setTag(String tag) {
-            this.tag = tag;
-        }
-
-        public String getPic_text() {
-            return pic_text;
-        }
-
-        public void setPic_text(String pic_text) {
-            this.pic_text = pic_text;
         }
     }
 }

@@ -6,12 +6,12 @@ public class DetailsDescriptionPresenter extends AbstractDetailsDescriptionPrese
 
     @Override
     protected void onBindDescription(ViewHolder viewHolder, Object item) {
-        Movie movie = (Movie) item;
+        WebActivity.Item movie = (WebActivity.Item) item;
 
         if (movie != null) {
-            viewHolder.getTitle().setText(movie.getTitle());
-            viewHolder.getSubtitle().setText(movie.getStudio());
-            viewHolder.getBody().setText(movie.getDescription());
+            viewHolder.getTitle().setText(movie.title);
+            viewHolder.getSubtitle().setText(movie.pic_text);
+            viewHolder.getBody().setText(movie.tag);
         }
     }
 }

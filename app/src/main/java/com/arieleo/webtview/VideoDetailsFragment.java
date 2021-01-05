@@ -52,7 +52,7 @@ public class VideoDetailsFragment extends DetailsFragment {
 
     private static final int NUM_COLS = 10;
 
-    private Movie mSelectedMovie;
+    private WebActivity.Item mSelectedMovie;
 
     private ArrayObjectAdapter mAdapter;
     private ClassPresenterSelector mPresenterSelector;
@@ -67,7 +67,7 @@ public class VideoDetailsFragment extends DetailsFragment {
         mDetailsBackground = new DetailsFragmentBackgroundController(this);
 
         mSelectedMovie =
-                (Movie) getActivity().getIntent().getSerializableExtra(DetailsActivity.MOVIE);
+                (WebActivity.Item) getActivity().getIntent().getSerializableExtra(DetailsActivity.MOVIE);
         if (mSelectedMovie != null) {
             mPresenterSelector = new ClassPresenterSelector();
             mAdapter = new ArrayObjectAdapter(mPresenterSelector);
@@ -83,10 +83,10 @@ public class VideoDetailsFragment extends DetailsFragment {
         }
     }
 
-    private void initializeBackground(Movie data) {
+    private void initializeBackground(WebActivity.Item data) {
         mDetailsBackground.enableParallax();
         Glide.with(getActivity())
-                .load(data.getBackgroundImageUrl())
+                .load(data.image)
                 .asBitmap()
                 .centerCrop()
                 .error(R.drawable.default_background)
@@ -108,7 +108,7 @@ public class VideoDetailsFragment extends DetailsFragment {
         int width = convertDpToPixel(getActivity().getApplicationContext(), DETAIL_THUMB_WIDTH);
         int height = convertDpToPixel(getActivity().getApplicationContext(), DETAIL_THUMB_HEIGHT);
         Glide.with(getActivity())
-                .load(mSelectedMovie.getCardImageUrl())
+                .load(mSelectedMovie.image)
                 .centerCrop()
                 .error(R.drawable.default_background)
                 .into(new SimpleTarget<GlideDrawable>(width, height) {
@@ -175,18 +175,18 @@ public class VideoDetailsFragment extends DetailsFragment {
     }
 
     private void setupRelatedMovieListRow() {
-        String subcategories[] = {getString(R.string.related_movies)};
-        List<Movie> list = MovieList.getList();
-
-        Collections.shuffle(list);
-        ArrayObjectAdapter listRowAdapter = new ArrayObjectAdapter(new CardPresenter());
-        for (int j = 0; j < NUM_COLS; j++) {
-            listRowAdapter.add(list.get(j % 5));
-        }
-
-        HeaderItem header = new HeaderItem(0, subcategories[0]);
-        mAdapter.add(new ListRow(header, listRowAdapter));
-        mPresenterSelector.addClassPresenter(ListRow.class, new ListRowPresenter());
+//        String subcategories[] = {getString(R.string.related_movies)};
+//        List<Movie> list = MovieList.getList();
+//
+//        Collections.shuffle(list);
+//        ArrayObjectAdapter listRowAdapter = new ArrayObjectAdapter(new CardPresenter());
+//        for (int j = 0; j < NUM_COLS; j++) {
+//            listRowAdapter.add(list.get(j % 5));
+//        }
+//
+//        HeaderItem header = new HeaderItem(0, subcategories[0]);
+//        mAdapter.add(new ListRow(header, listRowAdapter));
+//        mPresenterSelector.addClassPresenter(ListRow.class, new ListRowPresenter());
     }
 
     private int convertDpToPixel(Context context, int dp) {

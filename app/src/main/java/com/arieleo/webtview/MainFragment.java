@@ -5,7 +5,16 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.core.app.ActivityOptionsCompat;
+import androidx.core.content.ContextCompat;
 import androidx.leanback.app.BackgroundManager;
 import androidx.leanback.app.BrowseFragment;
 import androidx.leanback.widget.ArrayObjectAdapter;
@@ -18,24 +27,13 @@ import androidx.leanback.widget.OnItemViewSelectedListener;
 import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.Row;
 import androidx.leanback.widget.RowPresenter;
-import androidx.core.app.ActivityOptionsCompat;
-import androidx.core.content.ContextCompat;
-
-import android.util.DisplayMetrics;
-import android.util.Log;
-import android.view.Gravity;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
+import com.google.gson.Gson;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -45,8 +43,6 @@ public class MainFragment extends BrowseFragment {
     private static final int BACKGROUND_UPDATE_DELAY = 300;
     private static final int GRID_ITEM_WIDTH = 200;
     private static final int GRID_ITEM_HEIGHT = 200;
-    private static final int NUM_ROWS = 6;
-    private static final int NUM_COLS = 15;
 
     private final Handler mHandler = new Handler();
     private Drawable mDefaultBackground;
@@ -79,24 +75,20 @@ public class MainFragment extends BrowseFragment {
     }
 
     private void loadRows() {
-        List<Movie> list = MovieList.setupMovies();
+        WebActivity.Meta[] data = (WebActivity.Meta[]) getActivity().getIntent().getSerializableExtra("meta");
 
         ArrayObjectAdapter rowsAdapter = new ArrayObjectAdapter(new ListRowPresenter());
         CardPresenter cardPresenter = new CardPresenter();
 
         int i;
-        for (i = 0; i < NUM_ROWS; i++) {
-            if (i != 0) {
-                Collections.shuffle(list);
-            }
+        for( i = 0; i < data.length; i ++) {
             ArrayObjectAdapter listRowAdapter = new ArrayObjectAdapter(cardPresenter);
-            for (int j = 0; j < NUM_COLS; j++) {
-                listRowAdapter.add(list.get(j % 5));
+            for(int j = 0; j < data[i].items.size(); j ++) {
+                listRowAdapter.add(data[i].items.get(j));
             }
-            HeaderItem header = new HeaderItem(i, MovieList.MOVIE_CATEGORY[i]);
+            HeaderItem header = new HeaderItem(i, data[i].category);
             rowsAdapter.add(new ListRow(header, listRowAdapter));
         }
-
         HeaderItem gridHeader = new HeaderItem(i, "PREFERENCES");
 
         GridItemPresenter mGridPresenter = new GridItemPresenter();
@@ -178,8 +170,8 @@ public class MainFragment extends BrowseFragment {
         public void onItemClicked(Presenter.ViewHolder itemViewHolder, Object item,
                                   RowPresenter.ViewHolder rowViewHolder, Row row) {
 
-            if (item instanceof Movie) {
-                Movie movie = (Movie) item;
+            if (item instanceof WebActivity.Item) {
+                WebActivity.Item movie = (WebActivity.Item) item;
                 Log.d(TAG, "Item: " + item.toString());
                 Intent intent = new Intent(getActivity(), DetailsActivity.class);
                 intent.putExtra(DetailsActivity.MOVIE, movie);
