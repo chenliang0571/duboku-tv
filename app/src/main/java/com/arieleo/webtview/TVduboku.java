@@ -6,12 +6,29 @@ public class TVduboku {
             "    return new Date().toString();\n" +
             "})()";
     public static final String JsPlayOrStop = "(function() {\n" +
-            "    const big = document.querySelector('#playerCnt > button.vjs-big-play-button');\n" +
-            "    if(big) {\n" +
-            "        big.click();\n" +
-            "    } else {\n" +
-            "        document.querySelector('#playerCnt > div.vjs-control-bar > button.vjs-play-control.vjs-control').click();\n" +
+            "    const iframe = document.querySelector('iframe[src=\"/static/player/videojs.html\"]')\n" +
+            "    console.log('iframe ' + (iframe?iframe.tagName:'null'));\n" +
+            "    if(!iframe) return null;\n" +
+            "    const video = iframe.contentWindow.document.querySelector('video');\n" +
+            "    console.log('video ' + (video?video.tagName:'null'));\n" +
+            "    if(video) {" +
+            "       video.play();" +
+            "       video.scrollIntoView();" +
+//            "       if(video.requestFullScreen) video.requestFullscreen();\n" +
+//            "       if(video.webkitRequestFullScreen) video.webkitRequestFullScreen();\n" +
+            "       return 'video'\n" +
             "    }\n" +
+//            "    const big = iframe.contentWindow.document.querySelector('button.vjs-big-play-button');\n" +
+//            "    const small = iframe.contentWindow.document.querySelector('div.vjs-control-bar button.vjs-play-control.vjs-control');\n" +
+//            "    if(big) {\n" +
+//            "        big.click();\n" +
+//            "        return 'big'\n" +
+//            "    } else if(small){\n" +
+//            "        small.click();\n" +
+//            "        return 'small'\n" +
+//            "    } else {\n" +
+//            "        return null\n" +
+//            "    }\n" +
             "})()";
     public static final String JsLoadMeta = "(function() {\n" +
             "    const meta = [];\n" +
@@ -35,5 +52,13 @@ public class TVduboku {
             "        });\n" +
             "    });\n" +
             "    return JSON.stringify(meta);\n" +
+            "})()";
+
+    public static final String JsLoadEpisodes = "(function() {\n" +
+            "const items = [];\n" +
+            "document.querySelector('#playlist1 ul').querySelectorAll('li a.btn').forEach(node => {\n" +
+            "    items.push({title: node.innerText, link: node.href});\n" +
+            "});\n" +
+            "return JSON.stringify(items);" +
             "})()";
 }

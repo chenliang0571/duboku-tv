@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".WebActivity">
+    tools:context=".WebMainActivity">
 
     <LinearLayout
         android:orientation="horizontal"
@@ -14,6 +14,7 @@
             android:id="@+id/text_view_id"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             android:text="hello"/>
 
         <WebView

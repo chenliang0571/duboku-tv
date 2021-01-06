@@ -32,7 +32,6 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
-import com.google.gson.Gson;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -75,7 +74,7 @@ public class MainFragment extends BrowseFragment {
     }
 
     private void loadRows() {
-        WebActivity.Meta[] data = (WebActivity.Meta[]) getActivity().getIntent().getSerializableExtra("meta");
+        WebMainActivity.Meta[] data = (WebMainActivity.Meta[]) getActivity().getIntent().getSerializableExtra("meta");
 
         ArrayObjectAdapter rowsAdapter = new ArrayObjectAdapter(new ListRowPresenter());
         CardPresenter cardPresenter = new CardPresenter();
@@ -114,7 +113,7 @@ public class MainFragment extends BrowseFragment {
     private void setupUIElements() {
         // setBadgeDrawable(getActivity().getResources().getDrawable(
         // R.drawable.videos_by_google_banner));
-        setTitle(getString(R.string.browse_title)); // Badge, when set, takes precedent
+        setTitle("www.duboku.tv"); // Badge, when set, takes precedent
         // over title
         setHeadersState(HEADERS_ENABLED);
         setHeadersTransitionOnBackEnabled(true);
@@ -170,10 +169,10 @@ public class MainFragment extends BrowseFragment {
         public void onItemClicked(Presenter.ViewHolder itemViewHolder, Object item,
                                   RowPresenter.ViewHolder rowViewHolder, Row row) {
 
-            if (item instanceof WebActivity.Item) {
-                WebActivity.Item movie = (WebActivity.Item) item;
+            if (item instanceof Item) {
+                Item movie = (Item) item;
                 Log.d(TAG, "Item: " + item.toString());
-                Intent intent = new Intent(getActivity(), DetailsActivity.class);
+                Intent intent = new Intent(getActivity(), WebDetailActivity.class);
                 intent.putExtra(DetailsActivity.MOVIE, movie);
 
                 Bundle bundle = ActivityOptionsCompat.makeSceneTransitionAnimation(

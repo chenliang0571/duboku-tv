@@ -3,8 +3,17 @@ package com.arieleo.webtview;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.core.app.ActivityOptionsCompat;
+import androidx.core.content.ContextCompat;
 import androidx.leanback.app.DetailsFragment;
 import androidx.leanback.app.DetailsFragmentBackgroundController;
 import androidx.leanback.widget.Action;
@@ -22,19 +31,11 @@ import androidx.leanback.widget.OnItemViewClickedListener;
 import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.Row;
 import androidx.leanback.widget.RowPresenter;
-import androidx.core.app.ActivityOptionsCompat;
-import androidx.core.content.ContextCompat;
-
-import android.util.Log;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
-
-import java.util.Collections;
-import java.util.List;
 
 /*
  * LeanbackDetailsFragment extends DetailsFragment, a Wrapper fragment for leanback details screens.
@@ -50,9 +51,7 @@ public class VideoDetailsFragment extends DetailsFragment {
     private static final int DETAIL_THUMB_WIDTH = 274;
     private static final int DETAIL_THUMB_HEIGHT = 274;
 
-    private static final int NUM_COLS = 10;
-
-    private WebActivity.Item mSelectedMovie;
+    private Item mSelectedMovie;
 
     private ArrayObjectAdapter mAdapter;
     private ClassPresenterSelector mPresenterSelector;
@@ -67,7 +66,7 @@ public class VideoDetailsFragment extends DetailsFragment {
         mDetailsBackground = new DetailsFragmentBackgroundController(this);
 
         mSelectedMovie =
-                (WebActivity.Item) getActivity().getIntent().getSerializableExtra(DetailsActivity.MOVIE);
+                (Item) getActivity().getIntent().getSerializableExtra(DetailsActivity.MOVIE);
         if (mSelectedMovie != null) {
             mPresenterSelector = new ClassPresenterSelector();
             mAdapter = new ArrayObjectAdapter(mPresenterSelector);
@@ -83,7 +82,7 @@ public class VideoDetailsFragment extends DetailsFragment {
         }
     }
 
-    private void initializeBackground(WebActivity.Item data) {
+    private void initializeBackground(Item data) {
         mDetailsBackground.enableParallax();
         Glide.with(getActivity())
                 .load(data.image)
@@ -175,18 +174,16 @@ public class VideoDetailsFragment extends DetailsFragment {
     }
 
     private void setupRelatedMovieListRow() {
-//        String subcategories[] = {getString(R.string.related_movies)};
-//        List<Movie> list = MovieList.getList();
-//
-//        Collections.shuffle(list);
-//        ArrayObjectAdapter listRowAdapter = new ArrayObjectAdapter(new CardPresenter());
-//        for (int j = 0; j < NUM_COLS; j++) {
-//            listRowAdapter.add(list.get(j % 5));
-//        }
-//
-//        HeaderItem header = new HeaderItem(0, subcategories[0]);
-//        mAdapter.add(new ListRow(header, listRowAdapter));
-//        mPresenterSelector.addClassPresenter(ListRow.class, new ListRowPresenter());
+        Episode[] data = (Episode[]) this.getActivity().getIntent().getSerializableExtra("episodes");
+
+        ArrayObjectAdapter listRowAdapter = new ArrayObjectAdapter(new EpisodesItemPresenter());
+        for (int j = 0; j < data.length; j++) {
+            listRowAdapter.add(data[j]);
+        }
+
+        HeaderItem header = new HeaderItem(0, "episodes");
+        mAdapter.add(new ListRow(header, listRowAdapter));
+        mPresenterSelector.addClassPresenter(ListRow.class, new ListRowPresenter());
     }
 
     private int convertDpToPixel(Context context, int dp) {
@@ -194,6 +191,37 @@ public class VideoDetailsFragment extends DetailsFragment {
         return Math.round((float) dp * density);
     }
 
+    private class EpisodesItemPresenter extends Presenter {
+        private static final int GRID_ITEM_WIDTH = 200;
+        private static final int GRID_ITEM_HEIGHT = 200;
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent) {
+            TextView view = new TextView(parent.getContext());
+            view.setLayoutParams(new ViewGroup.LayoutParams(GRID_ITEM_WIDTH, GRID_ITEM_HEIGHT));
+            view.setFocusable(true);
+            view.setFocusableInTouchMode(true);
+            view.setBackgroundColor(
+                    ContextCompat.getColor(getActivity(), R.color.default_background));
+            view.setTextColor(Color.WHITE);
+            view.setGravity(Gravity.CENTER);
+            return new ViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(ViewHolder viewHolder, Object item) {
+            Episode episode = (Episode) item;
+            ((TextView) viewHolder.view).setText(episode.title);
+            viewHolder.view.setOnClickListener(v -> {
+                Intent intent = new Intent(getActivity(), WebVideoActivity.class);
+                intent.putExtra("episode", episode);
+                getActivity().startActivity(intent);
+            });
+        }
+
+        @Override
+        public void onUnbindViewHolder(ViewHolder viewHolder) {
+        }
+    }
     private final class ItemViewClickedListener implements OnItemViewClickedListener {
         @Override
         public void onItemClicked(
@@ -214,6 +242,10 @@ public class VideoDetailsFragment extends DetailsFragment {
                                 DetailsActivity.SHARED_ELEMENT_NAME)
                                 .toBundle();
                 getActivity().startActivity(intent, bundle);
+            } else if(item instanceof Episode) {
+                Intent intent = new Intent(getActivity(), WebVideoActivity.class);
+                intent.putExtra("episode", (Episode)item);
+                getActivity().startActivity(intent);
             }
         }
     }
