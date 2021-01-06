@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">WebTView</string>
+    <string name="app_name">独播库</string>
     <string name="browse_title">Videos by Your Company</string>
     <string name="related_movies">Related Videos</string>
     <string name="grid_view">Grid View</string>

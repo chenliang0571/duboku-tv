@@ -32,6 +32,8 @@ public class WebVideoActivity extends FragmentActivity {
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
         webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
+        webView.getSettings().setBuiltInZoomControls(true);
+        webView.getSettings().setUseWideViewPort(true);
         webView.getSettings().setUserAgentString("Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Mobile Safari/537.36 Edg/87.0.664.66");
         webView.addJavascriptInterface(new WebAppInterface(this), "Android");
         webView.setWebContentsDebuggingEnabled(true);
@@ -61,10 +63,6 @@ public class WebVideoActivity extends FragmentActivity {
             if(s.contains("null")) {
                 Log.d(TAG, "play: JsPlayOrStop");
                 play(webView, script);
-            } else if("\"big\"".equals(s)) {
-                //Failed to execute 'requestFullScreen' on 'Element': API can only be initiated by a user gesture.
-//                Log.d(TAG, "play: JsFullScreen");
-//                play(webView, TVduboku.JsFullScreen);
             }
         }), 2000);
     }
