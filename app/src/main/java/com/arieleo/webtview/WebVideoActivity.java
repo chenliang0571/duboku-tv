@@ -5,12 +5,14 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
@@ -22,6 +24,7 @@ public class WebVideoActivity extends FragmentActivity {
             View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
             View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
             View.SYSTEM_UI_FLAG_IMMERSIVE;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,12 +46,42 @@ public class WebVideoActivity extends FragmentActivity {
                 super.onPageFinished(view, url);
                 Log.d(TAG, url);
 
-                play(webView,TVduboku.JsPlayOrStop);
+                play(webView, TVduboku.JsVideoStart);
             }
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return false;
+            }
+
+            @Override
+            public void onUnhandledKeyEvent(WebView view, KeyEvent event) {
+                Log.d(TAG, "onUnhandledKeyEvent: " + event.getKeyCode());
+            }
+
+            @Override
+            public boolean shouldOverrideKeyEvent(WebView view, KeyEvent event) {
+                Log.d(TAG, "shouldOverrideKeyEvent: " + event.getKeyCode());
+                if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER
+                        || event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                        || event.getKeyCode() == KeyEvent.KEYCODE_MENU) {
+                    showToast("上键暂停，下键播放，左键回退，右键快进");
+                    return true;
+                } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP) {
+                    play(webView, TVduboku.JsPause);
+                    return true;
+                } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN) {
+                    play(webView, TVduboku.JsPlay);
+                    return true;
+                } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_LEFT) {
+                    play(webView, TVduboku.JsBackward);
+                    return true;
+                } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                    play(webView, TVduboku.JsForward);
+                    return true;
+                } else {
+                    return false;
+                }
             }
         });
         webView.setWebChromeClient(new WebVideoActivity.WebChromeClientCustom());
@@ -56,12 +89,16 @@ public class WebVideoActivity extends FragmentActivity {
         webView.loadUrl(episode.link);
     }
 
+    public void showToast(String toast) {
+        Toast.makeText(this, toast, Toast.LENGTH_SHORT).show();
+    }
+
     protected void play(WebView webView, String script) {
         final Handler handler = new Handler();
         handler.postDelayed(() -> webView.evaluateJavascript(script, s -> {
             Log.d(TAG, "From JS: " + s.length() + " - " + s);
-            if(s.contains("null")) {
-                Log.d(TAG, "play: JsPlayOrStop");
+            if (s.contains("null")) {
+                Log.d(TAG, "play: JS");
                 play(webView, script);
             }
         }), 2000);

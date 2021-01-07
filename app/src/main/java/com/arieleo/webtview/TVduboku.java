@@ -5,17 +5,17 @@ public class TVduboku {
             "    Android.showToast(\"test\");\n" +
             "    return new Date().toString();\n" +
             "})()";
-    public static final String JsPlayOrStop = "(function() {\n" +
+    public static final String JsVideoStart = "(function() {\n" +
             "    const iframe = document.querySelector('iframe[src=\"/static/player/videojs.html\"]')\n" +
             "    console.log('iframe ' + (iframe?iframe.tagName:'null'));\n" +
-            "    if(!iframe) return null;\n" +
+            "    if(!iframe) return 'iframe-null';\n" +
             "    const video = iframe.contentWindow.document.querySelector('video');\n" +
             "    console.log('video ' + (video?video.tagName:'null'));\n" +
             "    if(video) {" +
             "       video.play();" +
             "       video.scrollIntoView();" +
             //Failed to execute 'requestFullScreen' on 'Element': API can only be initiated by a user gesture.
-//            "       if(video.requestFullScreen) video.requestFullscreen();\n" +
+            //"       if(video.requestFullScreen) video.requestFullscreen();\n" +
             "       if(document.querySelector('a[class=btnskin]')) document.querySelector('a[class=btnskin]').click();" +
             "       const container = document.querySelector('body > div.container');" +
             "       if(container) container.style = 'height: auto !important; padding-left:0px !important; padding-right:0px !important';" +
@@ -23,18 +23,84 @@ public class TVduboku {
             "       if(div) div.style = 'width: 100% !important; height: auto !important;';" +
             "       if(video.webkitRequestFullScreen) video.webkitRequestFullScreen();\n" +
             "       return 'video'\n" +
-            "    }\n" +
-//            "    const big = iframe.contentWindow.document.querySelector('button.vjs-big-play-button');\n" +
-//            "    const small = iframe.contentWindow.document.querySelector('div.vjs-control-bar button.vjs-play-control.vjs-control');\n" +
-//            "    if(big) {\n" +
-//            "        big.click();\n" +
-//            "        return 'big'\n" +
-//            "    } else if(small){\n" +
-//            "        small.click();\n" +
-//            "        return 'small'\n" +
-//            "    } else {\n" +
-//            "        return null\n" +
-//            "    }\n" +
+            "    } else {\n" +
+            "       return 'video-null'\n" +
+            "    }" +
+            "})()";
+    public static final String JsForward = "(function() {\n" +
+            "    const iframe = document.querySelector('iframe[src=\"/static/player/videojs.html\"]')\n" +
+            "    console.log('iframe ' + (iframe?iframe.tagName:'null'));\n" +
+            "    if(!iframe) return 'iframe-null';\n" +
+            "    const video = iframe.contentWindow.document.querySelector('video');\n" +
+            "    console.log('video ' + (video?video.tagName:'null'));\n" +
+            "    if(video) {" +
+            "       video.currentTime += 5;" +
+            "       video.scrollIntoView();" +
+            "       return 'forward-' + video.currentTime;\n" +
+            "    } else {\n" +
+            "       return 'video-null'\n" +
+            "    }" +
+            "})()";
+    public static final String JsBackward = "(function() {\n" +
+            "    const iframe = document.querySelector('iframe[src=\"/static/player/videojs.html\"]')\n" +
+            "    console.log('iframe ' + (iframe?iframe.tagName:'null'));\n" +
+            "    if(!iframe) return 'iframe-null';\n" +
+            "    const video = iframe.contentWindow.document.querySelector('video');\n" +
+            "    console.log('video ' + (video?video.tagName:'null'));\n" +
+            "    if(video) {" +
+            "       video.currentTime -= 5;" +
+            "       video.scrollIntoView();" +
+            "       return 'backward-' + video.currentTime;\n" +
+            "    } else {\n" +
+            "       return 'video-null'\n" +
+            "    }" +
+            "})()";
+    public static final String JsPlay = "(function() {\n" +
+            "    const iframe = document.querySelector('iframe[src=\"/static/player/videojs.html\"]')\n" +
+            "    console.log('iframe ' + (iframe?iframe.tagName:'null'));\n" +
+            "    if(!iframe) return 'iframe-null';\n" +
+            "    const video = iframe.contentWindow.document.querySelector('video');\n" +
+            "    console.log('video ' + (video?video.tagName:'null'));\n" +
+            "    if(video) {" +
+            "       video.play();" +
+            "       video.scrollIntoView();" +
+            "       return 'play'\n" +
+            "    } else {\n" +
+            "       return 'video-null'\n" +
+            "    }" +
+            "})()";
+    public static final String JsPause = "(function() {\n" +
+            "    const iframe = document.querySelector('iframe[src=\"/static/player/videojs.html\"]')\n" +
+            "    console.log('iframe ' + (iframe?iframe.tagName:'null'));\n" +
+            "    if(!iframe) return 'iframe-null';\n" +
+            "    const video = iframe.contentWindow.document.querySelector('video');\n" +
+            "    console.log('video ' + (video?video.tagName:'null'));\n" +
+            "    if(video) {" +
+            "       video.pause();" +
+            "       video.scrollIntoView();" +
+            "       return 'pause'\n" +
+            "    } else {\n" +
+            "       return 'video-null'\n" +
+            "    }" +
+            "})()";
+    public static final String JsPlayOrStop = "(function() {\n" +
+            "    const iframe = document.querySelector('iframe[src=\"/static/player/videojs.html\"]')\n" +
+            "    console.log('iframe ' + (iframe?iframe.tagName:'null'));\n" +
+            "    if(!iframe) return 'iframe-null';\n" +
+            "    const video = iframe.contentWindow.document.querySelector('video');\n" +
+            "    console.log('video ' + (video?video.tagName:'null'));\n" +
+            "    if(video) {" +
+            "       video.scrollIntoView();" +
+            "       if(video.paused) {" +
+            "           video.play();" +
+            "           return 'play'\n" +
+            "       } else {" +
+            "           video.pause();" +
+            "           return 'pause'\n" +
+            "       }" +
+            "    } else {\n" +
+            "       return 'video-null'\n" +
+            "    }" +
             "})()";
     public static final String JsLoadMeta = "(function() {\n" +
             "    const meta = [];\n" +
