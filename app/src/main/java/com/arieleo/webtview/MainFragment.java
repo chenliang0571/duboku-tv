@@ -59,7 +59,8 @@ public class MainFragment extends BrowseFragment {
 
         setupUIElements();
 
-        loadRows();
+        Meta[] data = (Meta[]) getActivity().getIntent().getSerializableExtra("meta");
+        loadRows(data);
 
         setupEventListeners();
     }
@@ -73,8 +74,8 @@ public class MainFragment extends BrowseFragment {
         }
     }
 
-    private void loadRows() {
-        WebMainActivity.Meta[] data = (WebMainActivity.Meta[]) getActivity().getIntent().getSerializableExtra("meta");
+    private void loadRows(Meta[] data) {
+        //Meta[] data = (Meta[]) getActivity().getIntent().getSerializableExtra("meta");
 
         ArrayObjectAdapter rowsAdapter = new ArrayObjectAdapter(new ListRowPresenter());
         CardPresenter cardPresenter = new CardPresenter();
@@ -129,13 +130,21 @@ public class MainFragment extends BrowseFragment {
 
             @Override
             public void onClick(View view) {
-                Toast.makeText(getActivity(), "Implement your own in-app search", Toast.LENGTH_LONG)
-                        .show();
+//                Toast.makeText(getActivity(), "Implement your own in-app search", Toast.LENGTH_LONG)
+//                        .show();
+                search();
             }
         });
 
         setOnItemViewClickedListener(new ItemViewClickedListener());
         setOnItemViewSelectedListener(new ItemViewSelectedListener());
+    }
+
+    protected void search() {
+        Intent intent = new Intent(getActivity(), WebSearchActivity.class);
+        Meta[] data = (Meta[]) getActivity().getIntent().getSerializableExtra("meta");
+        intent.putExtra("meta", data);
+        startActivityForResult(intent, 123);
     }
 
     private void updateBackground(String uri) {
@@ -243,4 +252,13 @@ public class MainFragment extends BrowseFragment {
         }
     }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        Log.d(TAG, "onActivityResult: " + requestCode);
+        if(requestCode == 123) {
+            Meta[] data = (Meta[]) intent.getSerializableExtra("meta");
+            Log.d(TAG, "onActivityResult: " + data.length);
+            loadRows(data);
+        }
+    }
 }

@@ -1,6 +1,8 @@
 package com.arieleo.webtview;
 
 public class TVduboku {
+    public static final String UrlHome = "https://www.duboku.com/";
+    public static final String UrlSearch = "https://www.duboku.tv/vodsearch/-------------.html?submit=&wd=";
     public static final String JsTest = "(function() {\n" +
             "    Android.showToast(\"test\");\n" +
             "    return new Date().toString();\n" +
@@ -125,7 +127,29 @@ public class TVduboku {
             "    });\n" +
             "    return JSON.stringify(meta);\n" +
             "})()";
-
+    public static final String JsSearchResults = "(function() {\n" +
+            "    const meta = [];\n" +
+            "    document.querySelectorAll('div.myui-panel.myui-panel-bg > div.myui-panel-box').forEach(dom => {\n" +
+            "        const title = dom.querySelector('div.myui-panel__head > h3.title');\n" +
+            "        const more = dom.querySelector('div.myui-panel__head > a.more');\n" +
+            "        const items = [];\n" +
+            "        dom.querySelectorAll('ul.myui-vodlist__media > li > div > a').forEach(a => {\n" +
+            "            items.push({ \n" +
+            "                title: a.title, \n" +
+            "                href: a.href, \n" +
+            "                image: a.getAttribute('data-original'),\n" +
+            "                tag: a.querySelector('span.tag') ? a.querySelector('span.tag').innerText : '',\n" +
+            "                pic_text: a.querySelector('span.pic-text').innerText\n" +
+            "            });\n" +
+            "        });\n" +
+            "        meta.push({\n" +
+            "            category: title ? title.innerText: '',\n" +
+            "            link: more ? more.href: '',\n" +
+            "            items: items\n" +
+            "        });\n" +
+            "    });" +
+            "    return JSON.stringify(meta);\n" +
+            "})()";
     public static final String JsLoadEpisodes = "(function() {\n" +
             "const items = [];\n" +
             "document.querySelector('#playlist1 ul').querySelectorAll('li a.btn').forEach(node => {\n" +

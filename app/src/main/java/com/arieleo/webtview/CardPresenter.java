@@ -34,7 +34,7 @@ public class CardPresenter extends Presenter {
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent) {
-        Log.d(TAG, "onCreateViewHolder");
+        //Log.d(TAG, "onCreateViewHolder");
 
         sDefaultBackgroundColor =
                 ContextCompat.getColor(parent.getContext(), R.color.default_background);
@@ -67,7 +67,7 @@ public class CardPresenter extends Presenter {
         Item movie = (Item) item;
         ImageCardView cardView = (ImageCardView) viewHolder.view;
 
-        Log.d(TAG, "onBindViewHolder");
+        //Log.d(TAG, "onBindViewHolder");
         if (movie.image != null) {
             cardView.setTitleText(movie.title);
             cardView.setContentText(movie.pic_text + " - " + movie.tag);
@@ -82,7 +82,7 @@ public class CardPresenter extends Presenter {
 
     @Override
     public void onUnbindViewHolder(Presenter.ViewHolder viewHolder) {
-        Log.d(TAG, "onUnbindViewHolder");
+        //Log.d(TAG, "onUnbindViewHolder");
         ImageCardView cardView = (ImageCardView) viewHolder.view;
         // Remove references to images so that the garbage collector can free up memory
         cardView.setBadgeImage(null);

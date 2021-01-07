@@ -1,24 +1,16 @@
 package com.arieleo.webtview;
 
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
-import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
 import com.google.gson.Gson;
-
-import java.io.Serializable;
-import java.util.List;
 
 public class WebMainActivity extends FragmentActivity {
     private static final String TAG = "WebActivity";
@@ -74,22 +66,6 @@ public class WebMainActivity extends FragmentActivity {
         } catch (Exception e) {
             Toast.makeText(this, "ERROR:" + e.getMessage(), Toast.LENGTH_LONG).show();
             e.printStackTrace();
-        }
-    }
-
-    class Meta implements Serializable {
-        static final long serialVersionUID = 727561609867586888L;
-        String category;
-        String link;
-        List<Item> items;
-
-        @Override
-        public String toString() {
-            return "Meta{" +
-                    "category='" + category + '\'' +
-                    ", link='" + link + '\'' +
-                    ", items=" + items +
-                    '}';
         }
     }
 }
