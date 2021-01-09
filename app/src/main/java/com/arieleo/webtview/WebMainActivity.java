@@ -10,6 +10,7 @@ import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
+import com.arieleo.webtview.room.Drama;
 import com.google.gson.Gson;
 
 public class WebMainActivity extends FragmentActivity {
@@ -31,9 +32,9 @@ public class WebMainActivity extends FragmentActivity {
                 super.onPageFinished(view, url);
                 Log.d(TAG, url);
 
-                webView.evaluateJavascript(TVduboku.JsTest, s -> {
-                    Log.d(TAG, "From JS: " + s);
-                });
+//                webView.evaluateJavascript(TVduboku.JsTest, s -> {
+//                    Log.d(TAG, "From JS: " + s);
+//                });
                 webView.evaluateJavascript(TVduboku.JsLoadMeta, s -> {
                     String json = s.substring(1, s.length() - 1)
                             .replace("\\\"", "\"");
@@ -43,22 +44,17 @@ public class WebMainActivity extends FragmentActivity {
             }
 
             @Override
-            public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                super.onPageStarted(view, url, favicon);
-            }
-
-            @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return false;
             }
         });
-        webView.loadUrl("https://www.duboku.tv/");
+        webView.loadUrl("https://www.duboku.com/");
     }
 
     private void gotoActivity(String s) {
         try {
             Gson gson = new Gson();
-            Meta[] data = gson.fromJson(s, Meta[].class);
+            Drama[] data = gson.fromJson(s, Drama[].class);
             Log.d(TAG, "Meta Object length: " + data.length);
             Intent intent = new Intent(this, MainActivity.class);
             intent.putExtra("meta", data);

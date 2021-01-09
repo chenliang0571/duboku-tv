@@ -9,6 +9,7 @@ import androidx.core.content.ContextCompat;
 import android.util.Log;
 import android.view.ViewGroup;
 
+import com.arieleo.webtview.room.Drama;
 import com.bumptech.glide.Glide;
 
 /*
@@ -64,13 +65,13 @@ public class CardPresenter extends Presenter {
 
     @Override
     public void onBindViewHolder(Presenter.ViewHolder viewHolder, Object item) {
-        Item movie = (Item) item;
+        Drama movie = (Drama) item;
         ImageCardView cardView = (ImageCardView) viewHolder.view;
 
         //Log.d(TAG, "onBindViewHolder");
         if (movie.image != null) {
             cardView.setTitleText(movie.title);
-            cardView.setContentText(movie.pic_text + " - " + movie.tag);
+            cardView.setContentText(movie.picText + " - " + movie.tag);
             cardView.setMainImageDimensions(CARD_WIDTH, CARD_HEIGHT);
             Glide.with(viewHolder.view.getContext())
                     .load(movie.image)

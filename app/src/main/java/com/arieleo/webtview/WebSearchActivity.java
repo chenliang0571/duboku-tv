@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
+import com.arieleo.webtview.room.Drama;
 import com.google.gson.Gson;
 
 public class WebSearchActivity extends FragmentActivity {
@@ -54,7 +55,7 @@ public class WebSearchActivity extends FragmentActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final EditText text = new EditText(this);
 
-        builder.setTitle("关键字或数字ID").setView(text);
+        builder.setTitle("关键字搜索").setView(text);
         builder.setPositiveButton("搜索", (di, i) -> {
             final String wd = text.getText().toString();
             Log.d(TAG, "onClick: " + wd);
@@ -76,22 +77,10 @@ public class WebSearchActivity extends FragmentActivity {
 
     private void gotoActivity(String s) {
         try {
-            Gson gson = new Gson();
-            Meta[] data = gson.fromJson(s, Meta[].class);
-            Log.d(TAG, "data Object length: " + data.length);
-            Meta[] meta = (Meta[]) getIntent().getSerializableExtra("meta");
-            Log.d(TAG, "meta Object length: " + meta.length); //Arrays.toString(meta));
-
-            Meta[] all = new Meta[data.length + meta.length];
-            for (int i = 0; i < data.length; i++) {
-                all[i] = data[i];
-            }
-            for (int i = 0; i < meta.length; i++) {
-                all[data.length + i] = meta[i];
-            }
-            Log.d(TAG, "all Object length: " + all.length);
             Intent intent = new Intent();
-            intent.putExtra("meta", all);
+            Gson gson = new Gson();
+            Drama[] data = gson.fromJson(s, Drama[].class);
+            intent.putExtra("search", data);
             setResult(Activity.RESULT_OK, intent);
             finish();
         } catch (Exception e) {

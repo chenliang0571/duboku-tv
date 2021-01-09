@@ -105,55 +105,52 @@ public class TVduboku {
             "    }" +
             "})()";
     public static final String JsLoadMeta = "(function() {\n" +
-            "    const meta = [];\n" +
+            "    const dramas = [];\n" +
+            "    const now = new Date().toISOString();\n" +
             "    document.querySelectorAll('div.myui-panel.myui-panel-bg > div.myui-panel-box').forEach(dom => {\n" +
             "        const title = dom.querySelector('div.myui-panel__head > h3.title');\n" +
             "        const more = dom.querySelector('div.myui-panel__head > a.more');\n" +
-            "        const items = [];\n" +
             "        dom.querySelectorAll('ul.myui-vodlist > li > div > a').forEach(a => {\n" +
-            "            items.push({ \n" +
+            "            dramas.push({ \n" +
             "                title: a.title, \n" +
-            "                href: a.href, \n" +
+            "                url: a.href, \n" +
             "                image: a.getAttribute('data-original'),\n" +
             "                tag: a.querySelector('span.tag') ? a.querySelector('span.tag').innerText : '',\n" +
-            "                pic_text: a.querySelector('span.pic-text').innerText\n" +
+            "                picText: a.querySelector('span.pic-text').innerText,\n" +
+            "                category: title ? title.innerText: '',\n" +
+            "                moreUrl: more ? more.href: '',\n" +
+            "                upd: now,\n" +
             "            });\n" +
-            "        });\n" +
-            "        meta.push({\n" +
-            "            category: title ? title.innerText: '',\n" +
-            "            link: more ? more.href: '',\n" +
-            "            items: items\n" +
             "        });\n" +
             "    });\n" +
-            "    return JSON.stringify(meta);\n" +
+            "    return JSON.stringify(dramas);\n" +
             "})()";
     public static final String JsSearchResults = "(function() {\n" +
-            "    const meta = [];\n" +
+            "    const dramas = [];\n" +
+            "    const now = new Date().toISOString();\n" +
             "    document.querySelectorAll('div.myui-panel.myui-panel-bg > div.myui-panel-box').forEach(dom => {\n" +
             "        const title = dom.querySelector('div.myui-panel__head > h3.title');\n" +
             "        const more = dom.querySelector('div.myui-panel__head > a.more');\n" +
-            "        const items = [];\n" +
             "        dom.querySelectorAll('ul.myui-vodlist__media > li > div > a').forEach(a => {\n" +
-            "            items.push({ \n" +
+            "            dramas.push({ \n" +
             "                title: a.title, \n" +
-            "                href: a.href, \n" +
+            "                url: a.href, \n" +
             "                image: a.getAttribute('data-original'),\n" +
             "                tag: a.querySelector('span.tag') ? a.querySelector('span.tag').innerText : '',\n" +
-            "                pic_text: a.querySelector('span.pic-text').innerText\n" +
+            "                picText: a.querySelector('span.pic-text').innerText,\n" +
+            "                category: title ? title.innerText: '',\n" +
+            "                moreUrl: more ? more.href: '',\n" +
+            "                upd: now,\n" +
             "            });\n" +
             "        });\n" +
-            "        meta.push({\n" +
-            "            category: title ? title.innerText: '',\n" +
-            "            link: more ? more.href: '',\n" +
-            "            items: items\n" +
-            "        });\n" +
-            "    });" +
-            "    return JSON.stringify(meta);\n" +
+            "    });\n" +
+            "    return JSON.stringify(dramas);\n" +
             "})()";
     public static final String JsLoadEpisodes = "(function() {\n" +
             "const items = [];\n" +
+            "const now = new Date().toISOString();\n" +
             "document.querySelector('#playlist1 ul').querySelectorAll('li a.btn').forEach(node => {\n" +
-            "    items.push({title: node.innerText, link: node.href});\n" +
+            "    items.push({title: node.innerText, url: node.href, upd: now});\n" +
             "});\n" +
             "return JSON.stringify(items);" +
             "})()";
