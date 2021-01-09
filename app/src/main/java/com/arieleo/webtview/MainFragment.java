@@ -146,7 +146,8 @@ public class MainFragment extends BrowseFragment {
             }
         }
         //sort recent
-        Collections.sort(categories.get("recent"), (o1, o2) -> o2.upd.compareTo(o1.upd));
+        if(categories.get("recent") != null && categories.get("recent").size() > 0)
+            Collections.sort(categories.get("recent"), (o1, o2) -> o2.upd.compareTo(o1.upd));
 
         ArrayObjectAdapter rowsAdapter = new ArrayObjectAdapter(new ListRowPresenter());
         CardPresenter cardPresenter = new CardPresenter();
