@@ -16,6 +16,11 @@ import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
+import com.arieleo.webtview.room.DataAccess;
+import com.arieleo.webtview.room.Episode;
+
+import io.reactivex.schedulers.Schedulers;
+
 public class WebVideoActivity extends FragmentActivity {
     private static final String TAG = "WebVideoActivity";
     private static final int FULL_SCREEN_SETTING = View.SYSTEM_UI_FLAG_FULLSCREEN |
@@ -31,7 +36,7 @@ public class WebVideoActivity extends FragmentActivity {
         setContentView(R.layout.activity_web_main);
 
         WebView webView = findViewById(R.id.web_view);
-        webView.setWebContentsDebuggingEnabled(true);
+//        webView.setWebContentsDebuggingEnabled(true);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
         webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
@@ -39,13 +44,11 @@ public class WebVideoActivity extends FragmentActivity {
         webView.getSettings().setUseWideViewPort(true);
         webView.getSettings().setUserAgentString("Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Mobile Safari/537.36 Edg/87.0.664.66");
         webView.addJavascriptInterface(new WebAppInterface(this), "Android");
-        webView.setWebContentsDebuggingEnabled(true);
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 Log.d(TAG, url);
-
                 play(webView, TVduboku.JsVideoStart);
             }
 
@@ -86,7 +89,14 @@ public class WebVideoActivity extends FragmentActivity {
         });
         webView.setWebChromeClient(new WebVideoActivity.WebChromeClientCustom());
         Episode episode = (Episode) this.getIntent().getSerializableExtra("episode");
-        webView.loadUrl(episode.link);
+        Log.d(TAG, "onCreate: episode" + episode);
+        webView.loadUrl(episode.url);
+
+        DataAccess.getInstance(getApplicationContext())
+                .vodDao()
+                .insertHistory(episode)
+                .subscribeOn(Schedulers.io())
+                .subscribe(() -> Log.d(TAG, "vodDao insertHistory"), err -> err.printStackTrace());
     }
 
     public void showToast(String toast) {
@@ -94,14 +104,15 @@ public class WebVideoActivity extends FragmentActivity {
     }
 
     protected void play(WebView webView, String script) {
-        final Handler handler = new Handler();
-        handler.postDelayed(() -> webView.evaluateJavascript(script, s -> {
+        webView.evaluateJavascript(script, s -> {
             Log.d(TAG, "From JS: " + s.length() + " - " + s);
             if (s.contains("null")) {
                 Log.d(TAG, "play: JS");
-                play(webView, script);
+
+                final Handler handler = new Handler();
+                handler.postDelayed(() -> play(webView, script), 1000);
             }
-        }), 2000);
+        });
     }
 
     class WebChromeClientCustom extends WebChromeClient {

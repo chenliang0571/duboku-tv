@@ -7,12 +7,10 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.ContextCompat;
 import androidx.leanback.app.DetailsFragment;
 import androidx.leanback.app.DetailsFragmentBackgroundController;
@@ -23,7 +21,6 @@ import androidx.leanback.widget.DetailsOverviewRow;
 import androidx.leanback.widget.FullWidthDetailsOverviewRowPresenter;
 import androidx.leanback.widget.FullWidthDetailsOverviewSharedElementHelper;
 import androidx.leanback.widget.HeaderItem;
-import androidx.leanback.widget.ImageCardView;
 import androidx.leanback.widget.ListRow;
 import androidx.leanback.widget.ListRowPresenter;
 import androidx.leanback.widget.OnActionClickedListener;
@@ -32,10 +29,16 @@ import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.Row;
 import androidx.leanback.widget.RowPresenter;
 
+import com.arieleo.webtview.room.Drama;
+import com.arieleo.webtview.room.Episode;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /*
  * LeanbackDetailsFragment extends DetailsFragment, a Wrapper fragment for leanback details screens.
@@ -51,7 +54,7 @@ public class VideoDetailsFragment extends DetailsFragment {
     private static final int DETAIL_THUMB_WIDTH = 274;
     private static final int DETAIL_THUMB_HEIGHT = 274;
 
-    private Item mSelectedMovie;
+    private Drama mSelectedMovie;
 
     private ArrayObjectAdapter mAdapter;
     private ClassPresenterSelector mPresenterSelector;
@@ -66,13 +69,20 @@ public class VideoDetailsFragment extends DetailsFragment {
         mDetailsBackground = new DetailsFragmentBackgroundController(this);
 
         mSelectedMovie =
-                (Item) getActivity().getIntent().getSerializableExtra(DetailsActivity.MOVIE);
+                (Drama) getActivity().getIntent().getSerializableExtra(TVduboku.IntentDrama);
         if (mSelectedMovie != null) {
             mPresenterSelector = new ClassPresenterSelector();
             mAdapter = new ArrayObjectAdapter(mPresenterSelector);
             setupDetailsOverviewRow();
             setupDetailsOverviewRowPresenter();
-            setupRelatedMovieListRow();
+
+            Episode[] episodes = (Episode[]) this.getActivity().getIntent().getSerializableExtra(TVduboku.IntentEpisodes);
+            setupRelatedMovieListRow(episodes);
+            List<Episode> list = Arrays.asList(episodes);
+            Collections.reverse(list);
+            episodes = list.toArray(new Episode[0]);
+            setupRelatedMovieListRow(episodes);
+
             setAdapter(mAdapter);
             initializeBackground(mSelectedMovie);
             setOnItemViewClickedListener(new ItemViewClickedListener());
@@ -82,7 +92,7 @@ public class VideoDetailsFragment extends DetailsFragment {
         }
     }
 
-    private void initializeBackground(Item data) {
+    private void initializeBackground(Drama data) {
         mDetailsBackground.enableParallax();
         Glide.with(getActivity())
                 .load(data.image)
@@ -123,21 +133,21 @@ public class VideoDetailsFragment extends DetailsFragment {
 
         ArrayObjectAdapter actionAdapter = new ArrayObjectAdapter();
 
-        actionAdapter.add(
-                new Action(
-                        ACTION_WATCH_TRAILER,
-                        getResources().getString(R.string.watch_trailer_1),
-                        getResources().getString(R.string.watch_trailer_2)));
-        actionAdapter.add(
-                new Action(
-                        ACTION_RENT,
-                        getResources().getString(R.string.rent_1),
-                        getResources().getString(R.string.rent_2)));
-        actionAdapter.add(
-                new Action(
-                        ACTION_BUY,
-                        getResources().getString(R.string.buy_1),
-                        getResources().getString(R.string.buy_2)));
+//        actionAdapter.add(
+//                new Action(
+//                        ACTION_WATCH_TRAILER,
+//                        "-剧集排序-",
+//                        ""));
+//        actionAdapter.add(
+//                new Action(
+//                        ACTION_RENT,
+//                        getResources().getString(R.string.rent_1),
+//                        getResources().getString(R.string.rent_2)));
+//        actionAdapter.add(
+//                new Action(
+//                        ACTION_BUY,
+//                        getResources().getString(R.string.buy_1),
+//                        getResources().getString(R.string.buy_2)));
         row.setActionsAdapter(actionAdapter);
 
         mAdapter.add(row);
@@ -162,9 +172,9 @@ public class VideoDetailsFragment extends DetailsFragment {
             @Override
             public void onActionClicked(Action action) {
                 if (action.getId() == ACTION_WATCH_TRAILER) {
-                    Intent intent = new Intent(getActivity(), PlaybackActivity.class);
-                    intent.putExtra(DetailsActivity.MOVIE, mSelectedMovie);
-                    startActivity(intent);
+//                    Intent intent = new Intent(getActivity(), PlaybackActivity.class);
+//                    intent.putExtra(DetailsActivity.MOVIE, mSelectedMovie);
+//                    startActivity(intent);
                 } else {
                     Toast.makeText(getActivity(), action.toString(), Toast.LENGTH_SHORT).show();
                 }
@@ -173,17 +183,21 @@ public class VideoDetailsFragment extends DetailsFragment {
         mPresenterSelector.addClassPresenter(DetailsOverviewRow.class, detailsPresenter);
     }
 
-    private void setupRelatedMovieListRow() {
-        Episode[] data = (Episode[]) this.getActivity().getIntent().getSerializableExtra("episodes");
-
+    private void setupRelatedMovieListRow(Episode[] episodes) {
         ArrayObjectAdapter listRowAdapter = new ArrayObjectAdapter(new EpisodesItemPresenter());
-        for (int j = 0; j < data.length; j++) {
-            listRowAdapter.add(data[j]);
+        for (int j = 0; j < episodes.length; j++) {
+            listRowAdapter.add(episodes[j]);
         }
 
         HeaderItem header = new HeaderItem(0, "episodes");
         mAdapter.add(new ListRow(header, listRowAdapter));
-        mPresenterSelector.addClassPresenter(ListRow.class, new ListRowPresenter());
+        ListRowPresenter listRowPresenter = new ListRowPresenter();
+        listRowPresenter.setNumRows(2);
+        mPresenterSelector.addClassPresenter(ListRow.class, listRowPresenter);
+
+//        VerticalGridPresenter gridPresenter = new VerticalGridPresenter();
+//        gridPresenter.setNumberOfColumns(10);
+//        mPresenterSelector.addClassPresenter(VerticalGridView.class, gridPresenter);
     }
 
     private int convertDpToPixel(Context context, int dp) {
@@ -213,7 +227,7 @@ public class VideoDetailsFragment extends DetailsFragment {
             ((TextView) viewHolder.view).setText(episode.title);
             viewHolder.view.setOnClickListener(v -> {
                 Intent intent = new Intent(getActivity(), WebVideoActivity.class);
-                intent.putExtra("episode", episode);
+                intent.putExtra(TVduboku.IntentEpisode, episode);
                 getActivity().startActivity(intent);
             });
         }
@@ -230,21 +244,22 @@ public class VideoDetailsFragment extends DetailsFragment {
                 RowPresenter.ViewHolder rowViewHolder,
                 Row row) {
 
-            if (item instanceof Movie) {
-                Log.d(TAG, "Item: " + item.toString());
-                Intent intent = new Intent(getActivity(), DetailsActivity.class);
-                intent.putExtra(getResources().getString(R.string.movie), mSelectedMovie);
-
-                Bundle bundle =
-                        ActivityOptionsCompat.makeSceneTransitionAnimation(
-                                getActivity(),
-                                ((ImageCardView) itemViewHolder.view).getMainImageView(),
-                                DetailsActivity.SHARED_ELEMENT_NAME)
-                                .toBundle();
-                getActivity().startActivity(intent, bundle);
-            } else if(item instanceof Episode) {
+//            if (item instanceof Drama) {
+//                Log.d(TAG, "Item: " + item.toString());
+//                Intent intent = new Intent(getActivity(), DetailsActivity.class);
+//                intent.putExtra(getResources().getString(R.string.movie), mSelectedMovie);
+//
+//                Bundle bundle =
+//                        ActivityOptionsCompat.makeSceneTransitionAnimation(
+//                                getActivity(),
+//                                ((ImageCardView) itemViewHolder.view).getMainImageView(),
+//                                DetailsActivity.SHARED_ELEMENT_NAME)
+//                                .toBundle();
+//                getActivity().startActivity(intent, bundle);
+//            }
+            if(item instanceof Episode) {
                 Intent intent = new Intent(getActivity(), WebVideoActivity.class);
-                intent.putExtra("episode", (Episode)item);
+                intent.putExtra(TVduboku.IntentEpisode, (Episode)item);
                 getActivity().startActivity(intent);
             }
         }

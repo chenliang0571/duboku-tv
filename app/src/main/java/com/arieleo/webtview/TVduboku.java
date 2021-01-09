@@ -1,8 +1,12 @@
 package com.arieleo.webtview;
 
 public class TVduboku {
-    public static final String UrlHome = "https://www.duboku.com/";
     public static final String UrlSearch = "https://www.duboku.tv/vodsearch/-------------.html?submit=&wd=";
+    public static final String IntentDrama = "drama";
+    public static final String IntentDramas = "dramas";
+    public static final String IntentEpisode = "episode";
+    public static final String IntentEpisodes = "episodes";
+    public static final String IntentSearch = "search";
     public static final String JsTest = "(function() {\n" +
             "    Android.showToast(\"test\");\n" +
             "    return new Date().toString();\n" +

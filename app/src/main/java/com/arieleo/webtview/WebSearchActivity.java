@@ -24,7 +24,7 @@ public class WebSearchActivity extends FragmentActivity {
         setContentView(R.layout.activity_web_main);
 
         WebView webView = findViewById(R.id.web_view);
-        webView.setWebContentsDebuggingEnabled(true);
+//        webView.setWebContentsDebuggingEnabled(true);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         webView.addJavascriptInterface(new WebAppInterface(this), "Android");
@@ -80,7 +80,7 @@ public class WebSearchActivity extends FragmentActivity {
             Intent intent = new Intent();
             Gson gson = new Gson();
             Drama[] data = gson.fromJson(s, Drama[].class);
-            intent.putExtra("search", data);
+            intent.putExtra(TVduboku.IntentSearch, data);
             setResult(Activity.RESULT_OK, intent);
             finish();
         } catch (Exception e) {

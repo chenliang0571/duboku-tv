@@ -8,7 +8,6 @@ import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,16 +27,29 @@ import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.Row;
 import androidx.leanback.widget.RowPresenter;
 
+import com.arieleo.webtview.room.DataAccess;
+import com.arieleo.webtview.room.Drama;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+
 public class MainFragment extends BrowseFragment {
-    private static final String TAG = "MainFragment";
+    private static final String TAG = "MainFragment-DDDD";
 
     private static final int BACKGROUND_UPDATE_DELAY = 300;
     private static final int GRID_ITEM_WIDTH = 200;
@@ -50,19 +62,48 @@ public class MainFragment extends BrowseFragment {
     private String mBackgroundUri;
     private BackgroundManager mBackgroundManager;
 
+    private Drama[] dramas;
+    private boolean isDataChanged = true;
+    private boolean isFront = true;
+
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         Log.i(TAG, "onCreate");
         super.onActivityCreated(savedInstanceState);
 
         prepareBackgroundManager();
-
         setupUIElements();
-
-        Meta[] data = (Meta[]) getActivity().getIntent().getSerializableExtra("meta");
-        loadRows(data);
-
         setupEventListeners();
+
+        dramas = (Drama[]) getActivity().getIntent().getSerializableExtra(TVduboku.IntentDramas);
+        if (dramas != null && dramas.length > 0) {
+            saveToDrama(dramas);
+            Log.d(TAG, "onActivityCreated: " + dramas.length);
+            loadRecent();
+        }
+    }
+
+    private  void loadRecent() {
+        DataAccess.getInstance(getActivity().getApplicationContext())
+                .vodDao().findRecent()
+                .subscribeOn(Schedulers.io())
+                .subscribe((dramas) -> {
+                            Log.d(TAG, "vodDao: findRecent " + dramas.size());
+                            for (int i = 0; i < dramas.size(); i++) {
+                                dramas.get(i).category = "recent";
+                            }
+
+                            updateRows(dramas.toArray(new Drama[0]));
+                            loadRows();
+                        },
+                        err -> err.printStackTrace());
+    }
+
+    private void saveToDrama(Drama[] dramas) {
+        DataAccess.getInstance(getActivity().getApplicationContext())
+                .vodDao().insertVod(dramas)
+                .subscribeOn(Schedulers.io())
+                .subscribe(() -> Log.d(TAG, "vodDao insertVod"), err -> err.printStackTrace());
     }
 
     @Override
@@ -74,23 +115,53 @@ public class MainFragment extends BrowseFragment {
         }
     }
 
-    private void loadRows(Meta[] data) {
-        //Meta[] data = (Meta[]) getActivity().getIntent().getSerializableExtra("meta");
+    @Override
+    public void onResume() {
+        super.onResume();
+        isFront = true;
+        //loadRecent();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        isFront = false;
+    }
+
+    private void loadRows() {
+        if(isFront && isDataChanged) {
+            isDataChanged = false;
+        } else {
+            return;
+        }
+
+        LinkedHashMap<String, List<Drama>> categories = new LinkedHashMap<>();
+        for (int i = 0; i < dramas.length; i++) {
+            if (categories.containsKey(dramas[i].category)) {
+                categories.get(dramas[i].category).add(dramas[i]);
+            } else {
+                List<Drama> items = new ArrayList<>();
+                items.add(dramas[i]);
+                categories.put(dramas[i].category, items);
+            }
+        }
+        //sort recent
+        Collections.sort(categories.get("recent"), (o1, o2) -> o2.upd.compareTo(o1.upd));
 
         ArrayObjectAdapter rowsAdapter = new ArrayObjectAdapter(new ListRowPresenter());
         CardPresenter cardPresenter = new CardPresenter();
 
-        int i;
-        for( i = 0; i < data.length; i ++) {
+        int headerId = 0;
+        for (Map.Entry<String, List<Drama>> entry : categories.entrySet()) {
             ArrayObjectAdapter listRowAdapter = new ArrayObjectAdapter(cardPresenter);
-            for(int j = 0; j < data[i].items.size(); j ++) {
-                listRowAdapter.add(data[i].items.get(j));
+            for (int j = 0; j < entry.getValue().size(); j++) {
+                listRowAdapter.add(entry.getValue().get(j));
             }
-            HeaderItem header = new HeaderItem(i, data[i].category);
+            HeaderItem header = new HeaderItem(headerId++, entry.getKey());
             rowsAdapter.add(new ListRow(header, listRowAdapter));
         }
-        HeaderItem gridHeader = new HeaderItem(i, "PREFERENCES");
 
+        HeaderItem gridHeader = new HeaderItem(headerId, "PREFERENCES");
         GridItemPresenter mGridPresenter = new GridItemPresenter();
         ArrayObjectAdapter gridRowAdapter = new ArrayObjectAdapter(mGridPresenter);
         gridRowAdapter.add(getResources().getString(R.string.grid_view));
@@ -98,7 +169,11 @@ public class MainFragment extends BrowseFragment {
         gridRowAdapter.add(getResources().getString(R.string.personal_settings));
         rowsAdapter.add(new ListRow(gridHeader, gridRowAdapter));
 
-        setAdapter(rowsAdapter);
+        try {
+            setAdapter(rowsAdapter);
+        } catch (Exception err) {
+            Toast.makeText(getActivity(), err.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void prepareBackgroundManager() {
@@ -126,24 +201,15 @@ public class MainFragment extends BrowseFragment {
     }
 
     private void setupEventListeners() {
-        setOnSearchClickedListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View view) {
-//                Toast.makeText(getActivity(), "Implement your own in-app search", Toast.LENGTH_LONG)
-//                        .show();
-                search();
-            }
-        });
-
+        setOnSearchClickedListener(view -> search());
         setOnItemViewClickedListener(new ItemViewClickedListener());
         setOnItemViewSelectedListener(new ItemViewSelectedListener());
     }
 
     protected void search() {
         Intent intent = new Intent(getActivity(), WebSearchActivity.class);
-        Meta[] data = (Meta[]) getActivity().getIntent().getSerializableExtra("meta");
-        intent.putExtra("meta", data);
+        Drama[] data = (Drama[]) getActivity().getIntent().getSerializableExtra(TVduboku.IntentDramas);
+        intent.putExtra(TVduboku.IntentDramas, data);
         startActivityForResult(intent, 123);
     }
 
@@ -178,11 +244,11 @@ public class MainFragment extends BrowseFragment {
         public void onItemClicked(Presenter.ViewHolder itemViewHolder, Object item,
                                   RowPresenter.ViewHolder rowViewHolder, Row row) {
 
-            if (item instanceof Item) {
-                Item movie = (Item) item;
+            if (item instanceof Drama) {
+                Drama movie = (Drama) item;
                 Log.d(TAG, "Item: " + item.toString());
                 Intent intent = new Intent(getActivity(), WebDetailActivity.class);
-                intent.putExtra(DetailsActivity.MOVIE, movie);
+                intent.putExtra(TVduboku.IntentDrama, movie);
 
                 Bundle bundle = ActivityOptionsCompat.makeSceneTransitionAnimation(
                         getActivity(),
@@ -208,8 +274,8 @@ public class MainFragment extends BrowseFragment {
                 Object item,
                 RowPresenter.ViewHolder rowViewHolder,
                 Row row) {
-            if (item instanceof Movie) {
-                mBackgroundUri = ((Movie) item).getBackgroundImageUrl();
+            if (item instanceof Drama) {
+                mBackgroundUri = ((Drama) item).image;
                 startBackgroundTimer();
             }
         }
@@ -255,10 +321,38 @@ public class MainFragment extends BrowseFragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         Log.d(TAG, "onActivityResult: " + requestCode);
-        if(requestCode == 123) {
-            Meta[] data = (Meta[]) intent.getSerializableExtra("meta");
-            Log.d(TAG, "onActivityResult: " + data.length);
-            loadRows(data);
+        try {
+            if (requestCode == 123) {
+                Drama[] result = (Drama[]) intent.getSerializableExtra(TVduboku.IntentSearch);
+                Log.d(TAG, "onActivityResult: " + result.length);
+                if(result.length > 0) {
+                    saveToDrama(result);
+                    updateRows(result);
+                    loadRows();
+                }
+            }
+        } catch (Exception error) {
+            error.printStackTrace();
         }
+    }
+
+    private void updateRows(Drama[] data) {
+        Log.d(TAG, "updateRows - data length: " + data.length);
+        Log.d(TAG, "updateRows - dram length: " + dramas.length);
+        if (data.length == 0) { return; }
+
+        HashSet<String> pk = new HashSet<>();
+        LinkedList<Drama> all = new LinkedList<>();
+        for (int i = 0; i < data.length; i++) {
+            if (pk.add(data[i].title + data[i].category))
+                all.add(data[i]);
+        }
+        for (int i = 0; i < dramas.length; i++) {
+            if (pk.add(dramas[i].title + dramas[i].category))
+                all.add(dramas[i]);
+        }
+        dramas = all.toArray(new Drama[0]);
+
+        isDataChanged = true;
     }
 }

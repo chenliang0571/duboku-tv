@@ -22,7 +22,7 @@ public class WebMainActivity extends FragmentActivity {
         setContentView(R.layout.activity_web_main);
 
         WebView webView = findViewById(R.id.web_view);
-        webView.setWebContentsDebuggingEnabled(true);
+//        webView.setWebContentsDebuggingEnabled(true);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         webView.addJavascriptInterface(new WebAppInterface(this), "Android");
@@ -55,9 +55,9 @@ public class WebMainActivity extends FragmentActivity {
         try {
             Gson gson = new Gson();
             Drama[] data = gson.fromJson(s, Drama[].class);
-            Log.d(TAG, "Meta Object length: " + data.length);
+            Log.d(TAG, "Dramas Object length: " + data.length);
             Intent intent = new Intent(this, MainActivity.class);
-            intent.putExtra("meta", data);
+            intent.putExtra(TVduboku.IntentDramas, data);
             startActivity(intent);
         } catch (Exception e) {
             Toast.makeText(this, "ERROR:" + e.getMessage(), Toast.LENGTH_LONG).show();
