@@ -15,9 +15,4 @@ public class DataAccess {
         }
         return db;
     }
-
-    public static void insert(Context appContext, Drama... records) {
-        AsyncTask.execute(() -> {
-        });
-    }
 }

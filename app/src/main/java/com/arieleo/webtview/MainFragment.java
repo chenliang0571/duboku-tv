@@ -34,6 +34,7 @@ import com.bumptech.glide.load.resource.drawable.GlideDrawable;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -63,8 +64,6 @@ public class MainFragment extends BrowseFragment {
     private BackgroundManager mBackgroundManager;
 
     private Drama[] dramas;
-    private boolean isDataChanged = true;
-    private boolean isFront = true;
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
@@ -77,26 +76,15 @@ public class MainFragment extends BrowseFragment {
 
         dramas = (Drama[]) getActivity().getIntent().getSerializableExtra(TVduboku.IntentDramas);
         if (dramas != null && dramas.length > 0) {
+            Serializable recent = getActivity().getIntent().getSerializableExtra(TVduboku.IntentRecent);
+            if(recent != null) {
+                updateRows((Drama[]) recent);
+            }
+
+            loadRows();
             saveToDrama(dramas);
             Log.d(TAG, "onActivityCreated: " + dramas.length);
-            loadRecent();
         }
-    }
-
-    private  void loadRecent() {
-        DataAccess.getInstance(getActivity().getApplicationContext())
-                .vodDao().findRecent()
-                .subscribeOn(Schedulers.io())
-                .subscribe((dramas) -> {
-                            Log.d(TAG, "vodDao: findRecent " + dramas.size());
-                            for (int i = 0; i < dramas.size(); i++) {
-                                dramas.get(i).category = "recent";
-                            }
-
-                            updateRows(dramas.toArray(new Drama[0]));
-                            loadRows();
-                        },
-                        err -> err.printStackTrace());
     }
 
     private void saveToDrama(Drama[] dramas) {
@@ -115,26 +103,7 @@ public class MainFragment extends BrowseFragment {
         }
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        isFront = true;
-        //loadRecent();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        isFront = false;
-    }
-
     private void loadRows() {
-        if(isFront && isDataChanged) {
-            isDataChanged = false;
-        } else {
-            return;
-        }
-
         LinkedHashMap<String, List<Drama>> categories = new LinkedHashMap<>();
         for (int i = 0; i < dramas.length; i++) {
             if (categories.containsKey(dramas[i].category)) {
@@ -334,6 +303,7 @@ public class MainFragment extends BrowseFragment {
             }
         } catch (Exception error) {
             error.printStackTrace();
+            Toast.makeText(getActivity(), error.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -353,7 +323,5 @@ public class MainFragment extends BrowseFragment {
                 all.add(dramas[i]);
         }
         dramas = all.toArray(new Drama[0]);
-
-        isDataChanged = true;
     }
 }

@@ -10,8 +10,11 @@ import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
+import com.arieleo.webtview.room.DataAccess;
 import com.arieleo.webtview.room.Drama;
 import com.google.gson.Gson;
+
+import io.reactivex.schedulers.Schedulers;
 
 public class WebMainActivity extends FragmentActivity {
     private static final String TAG = "WebActivity";
@@ -48,8 +51,22 @@ public class WebMainActivity extends FragmentActivity {
                 return false;
             }
         });
-        webView.loadUrl("https://www.duboku.com/");
+        webView.loadUrl(TVduboku.UrlHome);
+
+        DataAccess.getInstance(getApplicationContext())
+                .vodDao().findRecent()
+                .subscribeOn(Schedulers.io())
+                .subscribe((dramas) -> {
+                            Log.d(TAG, "vodDao: findRecent " + dramas.size());
+                            for (int i = 0; i < dramas.size(); i++) {
+                                dramas.get(i).category = "recent";
+                            }
+                            recent = dramas.toArray(new Drama[0]);
+                        },
+                        err -> err.printStackTrace());
     }
+
+    Drama[] recent;
 
     private void gotoActivity(String s) {
         try {
@@ -58,6 +75,9 @@ public class WebMainActivity extends FragmentActivity {
             Log.d(TAG, "Dramas Object length: " + data.length);
             Intent intent = new Intent(this, MainActivity.class);
             intent.putExtra(TVduboku.IntentDramas, data);
+            if(recent != null && recent.length > 0) {
+                intent.putExtra(TVduboku.IntentRecent, recent);
+            }
             startActivity(intent);
         } catch (Exception e) {
             Toast.makeText(this, "ERROR:" + e.getMessage(), Toast.LENGTH_LONG).show();
