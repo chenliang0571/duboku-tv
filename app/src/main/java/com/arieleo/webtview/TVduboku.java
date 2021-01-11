@@ -30,7 +30,7 @@ public class TVduboku {
             "       const div = document.querySelector('body > div.container > div > div');" +
             "       if(div) div.style = 'width: 100% !important; height: auto !important;';" +
             "       if(video.webkitRequestFullScreen) video.webkitRequestFullScreen();\n" +
-            "       return 'video'\n" +
+            "       return 'video-start-' + new Date().toISOString()\n" +
             "    } else {\n" +
             "       return 'video-null'\n" +
             "    }" +

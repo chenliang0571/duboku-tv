@@ -29,6 +29,7 @@ public class WebVideoActivity extends FragmentActivity {
             View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
             View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
             View.SYSTEM_UI_FLAG_IMMERSIVE;
+    private Episode episode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,15 +89,9 @@ public class WebVideoActivity extends FragmentActivity {
             }
         });
         webView.setWebChromeClient(new WebVideoActivity.WebChromeClientCustom());
-        Episode episode = (Episode) this.getIntent().getSerializableExtra("episode");
+        episode = (Episode) this.getIntent().getSerializableExtra("episode");
         Log.d(TAG, "onCreate: episode" + episode);
         webView.loadUrl(episode.url);
-
-        DataAccess.getInstance(getApplicationContext())
-                .vodDao()
-                .insertHistory(episode)
-                .subscribeOn(Schedulers.io())
-                .subscribe(() -> Log.d(TAG, "vodDao insertHistory"), err -> err.printStackTrace());
     }
 
     public void showToast(String toast) {
@@ -111,6 +106,14 @@ public class WebVideoActivity extends FragmentActivity {
 
                 final Handler handler = new Handler();
                 handler.postDelayed(() -> play(webView, script), 1000);
+            } else if (s.contains("video-start-")) {
+                episode.upd = s.replace("video-start-", "").replace("\"","");
+                DataAccess.getInstance(getApplicationContext())
+                        .vodDao()
+                        .insertHistory(episode)
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(() -> Log.d(TAG, "vodDao insertHistory " + episode),
+                                err -> err.printStackTrace());
             }
         });
     }
