@@ -308,20 +308,21 @@ public class MainFragment extends BrowseFragment {
     }
 
     private void updateRows(Drama[] data) {
-        Log.d(TAG, "updateRows - data length: " + data.length);
         Log.d(TAG, "updateRows - dram length: " + dramas.length);
+        Log.d(TAG, "updateRows - new length: " + data.length);
         if (data.length == 0) { return; }
 
         HashSet<String> pk = new HashSet<>();
         LinkedList<Drama> all = new LinkedList<>();
         for (int i = 0; i < data.length; i++) {
-            if (pk.add(data[i].title + data[i].category))
+            if (pk.add(data[i].url + data[i].category))
                 all.add(data[i]);
         }
         for (int i = 0; i < dramas.length; i++) {
-            if (pk.add(dramas[i].title + dramas[i].category))
+            if (pk.add(dramas[i].url + dramas[i].category))
                 all.add(dramas[i]);
         }
         dramas = all.toArray(new Drama[0]);
+        Log.d(TAG, "updateRows - dram length: " + dramas.length);
     }
 }
