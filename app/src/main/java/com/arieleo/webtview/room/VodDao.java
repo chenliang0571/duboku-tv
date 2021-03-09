@@ -30,6 +30,6 @@ public interface VodDao {
     @Query("SELECT distinct dramas.title,dramas.url,dramas.image,dramas.tag," +
             "dramas.pic_text,dramas.category,dramas.more_url,history.upd " +
             "FROM dramas inner join history on dramas.url = history.drama_url " +
-            "order by history.upd desc limit 20")
+            "group by dramas.title order by history.upd desc limit 20")
     Flowable<List<Drama>> findRecent();
 }
