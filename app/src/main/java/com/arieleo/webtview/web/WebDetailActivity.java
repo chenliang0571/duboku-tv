@@ -30,7 +30,7 @@ public class WebDetailActivity extends FragmentActivity {
         WebView webView = findViewById(R.id.web_view);
 //        webView.setWebContentsDebuggingEnabled(true);
         webView.getSettings().setJavaScriptEnabled(true);
-//        webView.getSettings().setLoadsImagesAutomatically(false);
+        webView.getSettings().setLoadsImagesAutomatically(false);
         webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         webView.addJavascriptInterface(new WebAppInterface(this), "Android");
         webView.setWebViewClient(new WebViewClient() {

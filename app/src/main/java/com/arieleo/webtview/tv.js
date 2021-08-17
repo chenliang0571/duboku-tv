@@ -33,16 +33,16 @@
     const dramas = [];
     const host = window.location.protocol + '//' + window.location.host;
     const now = new Date().toISOString();
-    document.querySelectorAll('div.pannel.search_box > ul.vodlist > li').forEach(dom => {
-        const title = dom.querySelector('div.myui-panel__head > h3.title');
-        const more = dom.querySelector('div.myui-panel__head > a.more');
-        dom.querySelectorAll('ul.myui-vodlist__media > li > div > a').forEach(a => {
+    document.querySelectorAll('div.pannel').forEach(dom => {
+        const title = dom.querySelector('div.pannel_head h3.title');
+        const more = '';
+        dom.querySelectorAll('div.search_box > ul.vodlist > li > div.searchlist_img > a').forEach(a => {
             dramas.push({
                 title: a.title,
                 url: a.href,
                 image: host + a.getAttribute('data-original'),
                 tag: a.querySelector('span.tag') ? a.querySelector('span.tag').innerText : '',
-                picText: a.querySelector('span.pic-text').innerText,
+                picText: a.querySelector('span.pic_text') ? a.querySelector('span.pic_text').innerText : '',
                 category: title ? title.innerText: '',
                 moreUrl: more ? more.href: '',
                 upd: now,
@@ -70,10 +70,20 @@
 * jsStart
 */
 (function() {
-    const ad = document.querySelector('html > iframe');
-    if(ad) ad.style.visibility = 'hidden';
+    document.querySelectorAll('iframe').forEach(node => {
+        if(!node.src) node.style.display = 'none';
+    });
+    document.querySelectorAll('div.OUTBRAIN').forEach(node => node.innerHTML = "");
+    const header = document.querySelector('#play_page > div.hot_banner');
+    if(header) header.innerHTML = "";
+    const foot = document.querySelector('#play_page > div.foot_nav');
+    if(foot) foot.innerHTML = "";
+    const ad = document.querySelector('#play_page > div.container');
+    if(ad) ad.innerHTML = "";
     const right = document.querySelector('#play_page div.container div.right_row ');
-    if(right) right.style.visibility = 'hidden';
+    if(right) right.style.display = 'none';
+    const boxbg = document.querySelector('#play_page div.play_boxbg');
+    if(boxbg) boxbg.style = 'height: 100% !important;';
     const iframe = document.querySelector('iframe[src=\"/static/player/plyr2.html\"]')
     console.log('iframe ' + (iframe?iframe.tagName:'null'));
     if(!iframe) return 'iframe-null';
@@ -82,10 +92,10 @@
     if(video) {
        video.play();
        video.scrollIntoView();
-       const container = document.querySelector('#play_page div.container');
-       if(container) container.style = 'width: auto !important; height: auto !important; margin-left:0px !important; margin-right:0px !important';
+//       const container = document.querySelector('#play_page div.container');
+//       if(container) container.style = 'width: auto !important; height: auto !important; margin-left:5px !important; margin-right:5px !important';
        const div = document.querySelector('#play_page div.container div.left_row');
-       if(div) div.style = 'width: 100% !important; height: auto !important;';
+       if(div) div.style = 'width: 90% !important; height: auto !important;';
        if(video.webkitRequestFullScreen) video.webkitRequestFullScreen();
        return 'video-start-' + new Date().toISOString()
     } else {
@@ -97,8 +107,9 @@
 * jsPlay
 */
 (function() {
-    const ad = document.querySelector('html > iframe');
-    if(ad) ad.style.visibility = 'hidden';
+    document.querySelectorAll('iframe').forEach(node => {
+        if(!node.src) node.style.display = 'none';
+    });
     const iframe = document.querySelector('iframe[src=\"/static/player/plyr2.html\"]')
     console.log('iframe ' + (iframe?iframe.tagName:'null'));
     if(!iframe) return 'iframe-null';

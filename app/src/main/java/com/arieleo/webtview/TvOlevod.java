@@ -13,10 +13,20 @@ public class TvOlevod {
     static String jsStart() {
         return
         "(function() {\n" +
-        "    const ad = document.querySelector('html > iframe');\n" +
-        "    if(ad) ad.style.visibility = 'hidden';\n" +
+        "    document.querySelectorAll('iframe').forEach(node => {\n" +
+        "        if(!node.src) node.style.display = 'none';\n" +
+        "    });\n" +
+        "    document.querySelectorAll('div.OUTBRAIN').forEach(node => node.innerHTML = \"\");\n" +
+        "    const header = document.querySelector('#play_page > div.hot_banner');\n" +
+        "    if(header) header.innerHTML = \"\";\n" +
+        "    const foot = document.querySelector('#play_page > div.foot_nav');\n" +
+        "    if(foot) foot.innerHTML = \"\";\n" +
+        "    const ad = document.querySelector('#play_page > div.container');\n" +
+        "    if(ad) ad.innerHTML = \"\";\n" +
         "    const right = document.querySelector('#play_page div.container div.right_row ');\n" +
-        "    if(right) right.style.visibility = 'hidden';\n" +
+        "    if(right) right.style.display = 'none';\n" +
+        "    const boxbg = document.querySelector('#play_page div.play_boxbg');\n" +
+        "    if(boxbg) boxbg.style = 'height: 1080px !important;';\n" +
         "    const iframe = document.querySelector('iframe[src=\\\"/static/player/plyr2.html\\\"]')\n" +
         "    console.log('iframe ' + (iframe?iframe.tagName:'null'));\n" +
         "    if(!iframe) return 'iframe-null';\n" +
@@ -25,10 +35,8 @@ public class TvOlevod {
         "    if(video) {\n" +
         "       video.play();\n" +
         "       video.scrollIntoView();\n" +
-        "       const container = document.querySelector('#play_page div.container');\n" +
-        "       if(container) container.style = 'z-index: 2147483647 !important;width: auto !important; height: auto !important; margin-left:0px !important; margin-right:0px !important';\n" +
         "       const div = document.querySelector('#play_page div.container div.left_row');\n" +
-        "       if(div) div.style = 'width: 100% !important; height: auto !important;';\n" +
+        "       if(div) div.style = 'width: 85% !important; height: auto !important;';\n" +
         "       if(video.webkitRequestFullScreen) video.webkitRequestFullScreen();\n" +
         "       return 'video-start-' + new Date().toISOString()\n" +
         "    } else {\n" +
@@ -39,8 +47,9 @@ public class TvOlevod {
     static String jsPlay() {
         return
         "(function() {\n" +
-        "    const ad = document.querySelector('html > iframe');\n" +
-        "    if(ad) ad.style.visibility = 'hidden';\n" +
+        "    document.querySelectorAll('iframe').forEach(node => {\n" +
+        "        if(!node.src) node.style.display = 'none';\n" +
+        "    });\n" +
         "    const iframe = document.querySelector('iframe[src=\\\"/static/player/plyr2.html\\\"]')\n" +
         "    console.log('iframe ' + (iframe?iframe.tagName:'null'));\n" +
         "    if(!iframe) return 'iframe-null';\n" +
@@ -137,16 +146,16 @@ public class TvOlevod {
         "    const dramas = [];\n" +
         "    const host = window.location.protocol + '//' + window.location.host;\n" +
         "    const now = new Date().toISOString();\n" +
-        "    document.querySelectorAll('div.pannel.search_box > ul.vodlist > li').forEach(dom => {\n" +
-        "        const title = dom.querySelector('div.myui-panel__head > h3.title');\n" +
-        "        const more = dom.querySelector('div.myui-panel__head > a.more');\n" +
-        "        dom.querySelectorAll('ul.myui-vodlist__media > li > div > a').forEach(a => {\n" +
+        "    document.querySelectorAll('div.pannel').forEach(dom => {\n" +
+        "        const title = dom.querySelector('div.pannel_head h3.title');\n" +
+        "        const more = '';\n" +
+        "        dom.querySelectorAll('div.search_box > ul.vodlist > li > div.searchlist_img > a').forEach(a => {\n" +
         "            dramas.push({\n" +
         "                title: a.title,\n" +
         "                url: a.href,\n" +
         "                image: host + a.getAttribute('data-original'),\n" +
         "                tag: a.querySelector('span.tag') ? a.querySelector('span.tag').innerText : '',\n" +
-        "                picText: a.querySelector('span.pic-text').innerText,\n" +
+        "                picText: a.querySelector('span.pic_text') ? a.querySelector('span.pic_text').innerText : '',\n" +
         "                category: title ? title.innerText: '',\n" +
         "                moreUrl: more ? more.href: '',\n" +
         "                upd: now,\n" +
