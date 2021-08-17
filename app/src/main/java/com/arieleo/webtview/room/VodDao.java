@@ -1,6 +1,7 @@
 package com.arieleo.webtview.room;
 
 import androidx.room.Dao;
+import androidx.room.Ignore;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
@@ -28,8 +29,9 @@ public interface VodDao {
     Maybe<List<Episode>> loadHistoryByDrama(String url);
 
     @Query("SELECT distinct dramas.title,dramas.url,dramas.image,dramas.tag," +
-            "dramas.pic_text,dramas.category,dramas.more_url,history.upd " +
+            "dramas.pic_text,dramas.category,dramas.more_url,history.upd, dramas.url_home " +
             "FROM dramas inner join history on dramas.url = history.drama_url " +
-            "group by dramas.url order by history.upd desc limit 20")
-    Flowable<List<Drama>> findRecent();
+            "WHERE dramas.url_home = :urlHome " +
+            "group by dramas.url order by history.upd desc limit 50")
+    Flowable<List<Drama>> findRecent(String urlHome);
 }

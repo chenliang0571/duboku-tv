@@ -9,13 +9,15 @@ import java.io.Serializable;
 
 @Entity(tableName = "history")
 public class Episode implements Serializable {
-
     static final long serialVersionUID = 727561609932127631L;
     @NonNull
     @PrimaryKey
     public String url;
     @NonNull
     public String title;
+    @NonNull
+    @ColumnInfo(name = "url_home")
+    public String urlHome;
     @ColumnInfo(name = "drama_url")
     public String dramaUrl;
     @ColumnInfo(name = "drama_title")
@@ -28,6 +30,7 @@ public class Episode implements Serializable {
         return "Episode{" +
                 "url='" + url + '\'' +
                 ", title='" + title + '\'' +
+                ", urlHome='" + urlHome + '\'' +
                 ", dramaUrl='" + dramaUrl + '\'' +
                 ", dramaTitle='" + dramaTitle + '\'' +
                 ", upd='" + upd + '\'' +

@@ -11,7 +11,7 @@ public class DataAccess {
     public static synchronized AppDatabase getInstance(Context appContext) {
         if (db == null) {
             db = Room.databaseBuilder(appContext,
-                    AppDatabase.class, "vod-20200109").build();
+                    AppDatabase.class, "vod-20210818").build();
         }
         return db;
     }

@@ -3,6 +3,7 @@ package com.arieleo.webtview.room;
 import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 import java.io.Serializable;
@@ -15,6 +16,9 @@ public class Drama implements Serializable {
     @NonNull
     @PrimaryKey
     public String url;
+    @NonNull
+    @ColumnInfo(name = "url_home")
+    public String urlHome;
     public String image;
     public String tag;
     @ColumnInfo(name = "pic_text")
@@ -24,6 +28,7 @@ public class Drama implements Serializable {
     @ColumnInfo(name = "more_url")
     public String moreUrl;
     public String upd;
+    @Ignore
     public String episodes;
 
     @Override
@@ -31,6 +36,7 @@ public class Drama implements Serializable {
         return "Drama{" +
                 "title='" + title + '\'' +
                 ", url='" + url + '\'' +
+                ", urlHome='" + urlHome + '\'' +
                 ", image='" + image + '\'' +
                 ", tag='" + tag + '\'' +
                 ", picText='" + picText + '\'' +

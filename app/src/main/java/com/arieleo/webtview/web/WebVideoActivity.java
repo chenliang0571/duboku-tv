@@ -1,4 +1,4 @@
-package com.arieleo.webtview;
+package com.arieleo.webtview.web;
 
 import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
@@ -16,6 +16,8 @@ import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
+import com.arieleo.webtview.R;
+import com.arieleo.webtview.TvSource;
 import com.arieleo.webtview.room.DataAccess;
 import com.arieleo.webtview.room.Episode;
 
@@ -50,7 +52,7 @@ public class WebVideoActivity extends FragmentActivity {
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 Log.d(TAG, url);
-                play(webView, TVduboku.JsVideoStart);
+                play(webView, TvSource.jsStart());
             }
 
             @Override
@@ -72,16 +74,16 @@ public class WebVideoActivity extends FragmentActivity {
                     showToast("上键暂停，下键播放，左键回退，右键快进");
                     return true;
                 } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP) {
-                    play(webView, TVduboku.JsPause);
+                    play(webView, TvSource.jsPause());
                     return true;
                 } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN) {
-                    play(webView, TVduboku.JsPlay);
+                    play(webView, TvSource.jsPlay());
                     return true;
                 } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_LEFT) {
-                    play(webView, TVduboku.JsBackward);
+                    play(webView, TvSource.jsBackward());
                     return true;
                 } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                    play(webView, TVduboku.JsForward);
+                    play(webView, TvSource.jsForward());
                     return true;
                 } else {
                     return false;
@@ -108,6 +110,7 @@ public class WebVideoActivity extends FragmentActivity {
                 handler.postDelayed(() -> play(webView, script), 1000);
             } else if (s.contains("video-start-")) {
                 episode.upd = s.replace("video-start-", "").replace("\"","");
+                episode.urlHome = TvSource.urlHome();
                 DataAccess.getInstance(getApplicationContext())
                         .vodDao()
                         .insertHistory(episode)

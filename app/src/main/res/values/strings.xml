@@ -1,6 +1,8 @@
 <resources>
-    <string name="app_name">独播库</string>
-    <string name="browse_title">Videos by Your Company</string>
+    <string name="app_name">倒影TV</string>
+    <string name="tv_name_duboku">独播库</string>
+    <string name="tv_name_olevod">欧乐影院</string>
+    <string name="browse_title">Videos by 倒影TV</string>
     <string name="related_movies">Related Videos</string>
     <string name="grid_view">Grid View</string>
     <string name="error_fragment">Error Fragment</string>

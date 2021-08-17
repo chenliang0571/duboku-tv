@@ -1,7 +1,6 @@
-package com.arieleo.webtview;
+package com.arieleo.webtview.web;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.util.Log;
 import android.webkit.WebView;
@@ -10,15 +9,19 @@ import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
+import com.arieleo.webtview.DetailsActivity;
+import com.arieleo.webtview.R;
+import com.arieleo.webtview.TvSource;
 import com.arieleo.webtview.room.DataAccess;
 import com.arieleo.webtview.room.Drama;
+import com.arieleo.webtview.room.Episode;
 import com.google.gson.Gson;
 
 import io.reactivex.schedulers.Schedulers;
 
-public class WebMainActivity extends FragmentActivity {
-    private static final String TAG = "WebActivity";
-
+public class WebDetailActivity extends FragmentActivity {
+    private static final String TAG = "WebDetailActivity";
+    private Drama drama;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -27,6 +30,7 @@ public class WebMainActivity extends FragmentActivity {
         WebView webView = findViewById(R.id.web_view);
 //        webView.setWebContentsDebuggingEnabled(true);
         webView.getSettings().setJavaScriptEnabled(true);
+//        webView.getSettings().setLoadsImagesAutomatically(false);
         webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         webView.addJavascriptInterface(new WebAppInterface(this), "Android");
         webView.setWebViewClient(new WebViewClient() {
@@ -35,10 +39,7 @@ public class WebMainActivity extends FragmentActivity {
                 super.onPageFinished(view, url);
                 Log.d(TAG, url);
 
-//                webView.evaluateJavascript(TVduboku.JsTest, s -> {
-//                    Log.d(TAG, "From JS: " + s);
-//                });
-                webView.evaluateJavascript(TVduboku.JsLoadMeta, s -> {
+                webView.evaluateJavascript(TvSource.jsLoadEpisodes(), s -> {
                     String json = s.substring(1, s.length() - 1)
                             .replace("\\\"", "\"");
                     Log.d(TAG, "From JS: " + s.length() + " - " + json);
@@ -51,33 +52,36 @@ public class WebMainActivity extends FragmentActivity {
                 return false;
             }
         });
-        webView.loadUrl(TVduboku.UrlHome);
 
+        drama = (Drama) this.getIntent().getSerializableExtra(TvSource.INTENT_DRAMA);
+        webView.loadUrl(drama.url);
+
+        //load history
         DataAccess.getInstance(getApplicationContext())
-                .vodDao().findRecent()
+                .vodDao()
+                .loadHistoryByDrama(drama.url)
                 .subscribeOn(Schedulers.io())
-                .subscribe((dramas) -> {
-                            Log.d(TAG, "vodDao: findRecent " + dramas.size());
-                            for (int i = 0; i < dramas.size(); i++) {
-                                dramas.get(i).category = "recent";
-                            }
-                            recent = dramas.toArray(new Drama[0]);
-                        },
-                        err -> err.printStackTrace());
+                .subscribe(history -> {
+                    Log.d(TAG, "vodDao loadHistoryById " + history.size());
+                    for(int i = 0; i < history.size(); i ++) {
+                        drama.tag += "\n" + history.get(i).title + " - " + history.get(i).upd;
+                    }
+                }, err -> err.printStackTrace());
     }
-
-    Drama[] recent;
 
     private void gotoActivity(String s) {
         try {
             Gson gson = new Gson();
-            Drama[] data = gson.fromJson(s, Drama[].class);
-            Log.d(TAG, "Dramas Object length: " + data.length);
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.putExtra(TVduboku.IntentDramas, data);
-            if(recent != null && recent.length > 0) {
-                intent.putExtra(TVduboku.IntentRecent, recent);
+            Episode[] data = gson.fromJson(s, Episode[].class);
+            Log.d(TAG, "Episodes Object length: " + data.length);
+            for (int i=0; i< data.length; i++) {
+                data[i].dramaTitle = drama.title;
+                data[i].dramaUrl = drama.url;
             }
+            Intent intent = new Intent(this, DetailsActivity.class);
+            intent.putExtra(TvSource.INTENT_EPISODES, data);
+            intent.putExtra(TvSource.INTENT_DRAMA,
+                    this.getIntent().getSerializableExtra(TvSource.INTENT_DRAMA));
             startActivity(intent);
         } catch (Exception e) {
             Toast.makeText(this, "ERROR:" + e.getMessage(), Toast.LENGTH_LONG).show();

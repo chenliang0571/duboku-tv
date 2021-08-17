@@ -22,11 +22,11 @@
         <activity android:name=".MainActivity" />
         <activity android:name=".DetailsActivity" />
         <activity android:name=".BrowseErrorActivity" />
-        <activity android:name=".WebVideoActivity" android:noHistory="true"/>
-        <activity android:name=".WebDetailActivity" android:noHistory="true"/>
-        <activity android:name=".WebSearchActivity" android:noHistory="true"/>
+        <activity android:name=".web.WebVideoActivity" android:noHistory="true"/>
+        <activity android:name=".web.WebDetailActivity" android:noHistory="true"/>
+        <activity android:name=".web.WebSearchActivity" android:noHistory="true"/>
         <activity
-            android:name=".WebMainActivity"
+            android:name=".web.WebMainActivity"
             android:banner="@drawable/app_icon_your_company"
             android:icon="@drawable/app_icon_your_company"
             android:label="@string/app_name"
@@ -43,5 +43,4 @@
             </intent-filter>
         </activity>
     </application>
-
 </manifest>

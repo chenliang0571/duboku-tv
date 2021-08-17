@@ -31,6 +31,7 @@ import androidx.leanback.widget.RowPresenter;
 
 import com.arieleo.webtview.room.Drama;
 import com.arieleo.webtview.room.Episode;
+import com.arieleo.webtview.web.WebVideoActivity;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
 import com.bumptech.glide.request.animation.GlideAnimation;
@@ -69,14 +70,14 @@ public class VideoDetailsFragment extends DetailsFragment {
         mDetailsBackground = new DetailsFragmentBackgroundController(this);
 
         mSelectedMovie =
-                (Drama) getActivity().getIntent().getSerializableExtra(TVduboku.IntentDrama);
+                (Drama) getActivity().getIntent().getSerializableExtra(TvSource.INTENT_DRAMA);
         if (mSelectedMovie != null) {
             mPresenterSelector = new ClassPresenterSelector();
             mAdapter = new ArrayObjectAdapter(mPresenterSelector);
             setupDetailsOverviewRow();
             setupDetailsOverviewRowPresenter();
 
-            Episode[] episodes = (Episode[]) this.getActivity().getIntent().getSerializableExtra(TVduboku.IntentEpisodes);
+            Episode[] episodes = (Episode[]) this.getActivity().getIntent().getSerializableExtra(TvSource.INTENT_EPISODES);
             setupRelatedMovieListRow(episodes);
             List<Episode> list = Arrays.asList(episodes);
             Collections.reverse(list);
@@ -227,7 +228,7 @@ public class VideoDetailsFragment extends DetailsFragment {
             ((TextView) viewHolder.view).setText(episode.title);
             viewHolder.view.setOnClickListener(v -> {
                 Intent intent = new Intent(getActivity(), WebVideoActivity.class);
-                intent.putExtra(TVduboku.IntentEpisode, episode);
+                intent.putExtra(TvSource.INTENT_EPISODE, episode);
                 getActivity().startActivity(intent);
             });
         }
@@ -259,7 +260,7 @@ public class VideoDetailsFragment extends DetailsFragment {
 //            }
             if(item instanceof Episode) {
                 Intent intent = new Intent(getActivity(), WebVideoActivity.class);
-                intent.putExtra(TVduboku.IntentEpisode, (Episode)item);
+                intent.putExtra(TvSource.INTENT_EPISODE, (Episode)item);
                 getActivity().startActivity(intent);
             }
         }

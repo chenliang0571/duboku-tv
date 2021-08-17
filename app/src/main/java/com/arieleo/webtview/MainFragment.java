@@ -29,6 +29,9 @@ import androidx.leanback.widget.RowPresenter;
 
 import com.arieleo.webtview.room.DataAccess;
 import com.arieleo.webtview.room.Drama;
+import com.arieleo.webtview.web.WebDetailActivity;
+import com.arieleo.webtview.web.WebMainActivity;
+import com.arieleo.webtview.web.WebSearchActivity;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
 import com.bumptech.glide.request.animation.GlideAnimation;
@@ -37,7 +40,6 @@ import com.bumptech.glide.request.target.SimpleTarget;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -46,7 +48,6 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class MainFragment extends BrowseFragment {
@@ -63,6 +64,7 @@ public class MainFragment extends BrowseFragment {
     private String mBackgroundUri;
     private BackgroundManager mBackgroundManager;
 
+    private TvSource source;
     private Drama[] dramas;
 
     @Override
@@ -70,13 +72,32 @@ public class MainFragment extends BrowseFragment {
         Log.i(TAG, "onCreate");
         super.onActivityCreated(savedInstanceState);
 
-        prepareBackgroundManager();
-        setupUIElements();
-        setupEventListeners();
+        //////////////prepareBackgroundManager/////////
+        mBackgroundManager = BackgroundManager.getInstance(getActivity());
+        mBackgroundManager.attach(getActivity().getWindow());
+        mDefaultBackground = ContextCompat.getDrawable(getActivity(), R.drawable.default_background);
+        mMetrics = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(mMetrics);
 
-        dramas = (Drama[]) getActivity().getIntent().getSerializableExtra(TVduboku.IntentDramas);
+        //////////////setupUIElements///////////
+        // Badge, when set, takes precedent
+        setTitle(TvSource.title());
+        // over title
+        setHeadersState(HEADERS_ENABLED);
+        setHeadersTransitionOnBackEnabled(true);
+        // set fastLane (or headers) background color
+        setBrandColor(ContextCompat.getColor(getActivity(), R.color.fastlane_background));
+        // set search icon color
+        setSearchAffordanceColor(ContextCompat.getColor(getActivity(), R.color.search_opaque));
+
+        ///////////////setupEventListeners/////////////
+        setOnSearchClickedListener(view -> search());
+        setOnItemViewClickedListener(new ItemViewClickedListener());
+        setOnItemViewSelectedListener(new ItemViewSelectedListener());
+
+        dramas = (Drama[]) getActivity().getIntent().getSerializableExtra(TvSource.INTENT_DRAMAS);
         if (dramas != null && dramas.length > 0) {
-            Serializable recent = getActivity().getIntent().getSerializableExtra(TVduboku.IntentRecent);
+            Serializable recent = getActivity().getIntent().getSerializableExtra(TvSource.INTENT_RECENT);
             if(recent != null) {
                 updateRows((Drama[]) recent);
             }
@@ -86,20 +107,30 @@ public class MainFragment extends BrowseFragment {
             Log.d(TAG, "onActivityCreated: " + dramas.length);
         }
     }
-
-    private void saveToDrama(Drama[] dramas) {
-        DataAccess.getInstance(getActivity().getApplicationContext())
-                .vodDao().insertVod(dramas)
-                .subscribeOn(Schedulers.io())
-                .subscribe(() -> Log.d(TAG, "vodDao insertVod"), err -> err.printStackTrace());
-    }
-
     @Override
     public void onDestroy() {
         super.onDestroy();
         if (null != mBackgroundTimer) {
             Log.d(TAG, "onDestroy: " + mBackgroundTimer.toString());
             mBackgroundTimer.cancel();
+        }
+    }
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        Log.d(TAG, "onActivityResult: " + requestCode);
+        try {
+            if (requestCode == 123) {
+                Drama[] result = (Drama[]) intent.getSerializableExtra(TvSource.INTENT_SEARCH);
+                Log.d(TAG, "onActivityResult: " + result.length);
+                if(result.length > 0) {
+                    saveToDrama(result);
+                    updateRows(result);
+                    loadRows();
+                }
+            }
+        } catch (Exception error) {
+            error.printStackTrace();
+            Toast.makeText(getActivity(), error.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -134,9 +165,9 @@ public class MainFragment extends BrowseFragment {
         HeaderItem gridHeader = new HeaderItem(headerId, "PREFERENCES");
         GridItemPresenter mGridPresenter = new GridItemPresenter();
         ArrayObjectAdapter gridRowAdapter = new ArrayObjectAdapter(mGridPresenter);
-        gridRowAdapter.add(getResources().getString(R.string.grid_view));
+        gridRowAdapter.add(getResources().getString(R.string.tv_name_duboku));
+        gridRowAdapter.add(getResources().getString(R.string.tv_name_olevod));
         gridRowAdapter.add(getString(R.string.error_fragment));
-        gridRowAdapter.add(getResources().getString(R.string.personal_settings));
         rowsAdapter.add(new ListRow(gridHeader, gridRowAdapter));
 
         try {
@@ -145,68 +176,38 @@ public class MainFragment extends BrowseFragment {
             Toast.makeText(getActivity(), err.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
+    private void updateRows(Drama[] data) {
+        Log.d(TAG, "updateRows - dram length: " + dramas.length);
+        Log.d(TAG, "updateRows - new length: " + data.length);
+        if (data.length == 0) { return; }
 
-    private void prepareBackgroundManager() {
-
-        mBackgroundManager = BackgroundManager.getInstance(getActivity());
-        mBackgroundManager.attach(getActivity().getWindow());
-
-        mDefaultBackground = ContextCompat.getDrawable(getActivity(), R.drawable.default_background);
-        mMetrics = new DisplayMetrics();
-        getActivity().getWindowManager().getDefaultDisplay().getMetrics(mMetrics);
+        HashSet<String> pk = new HashSet<>();
+        LinkedList<Drama> all = new LinkedList<>();
+        for (int i = 0; i < data.length; i++) {
+            if (pk.add(data[i].url + data[i].category))
+                all.add(data[i]);
+        }
+        for (int i = 0; i < dramas.length; i++) {
+            if (pk.add(dramas[i].url + dramas[i].category))
+                all.add(dramas[i]);
+        }
+        dramas = all.toArray(new Drama[0]);
+        Log.d(TAG, "updateRows - dram length: " + dramas.length);
     }
-
-    private void setupUIElements() {
-        // setBadgeDrawable(getActivity().getResources().getDrawable(
-        // R.drawable.videos_by_google_banner));
-        setTitle("www.duboku.tv"); // Badge, when set, takes precedent
-        // over title
-        setHeadersState(HEADERS_ENABLED);
-        setHeadersTransitionOnBackEnabled(true);
-
-        // set fastLane (or headers) background color
-        setBrandColor(ContextCompat.getColor(getActivity(), R.color.fastlane_background));
-        // set search icon color
-        setSearchAffordanceColor(ContextCompat.getColor(getActivity(), R.color.search_opaque));
-    }
-
-    private void setupEventListeners() {
-        setOnSearchClickedListener(view -> search());
-        setOnItemViewClickedListener(new ItemViewClickedListener());
-        setOnItemViewSelectedListener(new ItemViewSelectedListener());
-    }
-
     protected void search() {
         Intent intent = new Intent(getActivity(), WebSearchActivity.class);
-        Drama[] data = (Drama[]) getActivity().getIntent().getSerializableExtra(TVduboku.IntentDramas);
-        intent.putExtra(TVduboku.IntentDramas, data);
+        Drama[] data = (Drama[]) getActivity().getIntent().getSerializableExtra(TvSource.INTENT_DRAMAS);
+        intent.putExtra(TvSource.INTENT_DRAMAS, data);
         startActivityForResult(intent, 123);
     }
-
-    private void updateBackground(String uri) {
-        int width = mMetrics.widthPixels;
-        int height = mMetrics.heightPixels;
-        Glide.with(getActivity())
-                .load(uri)
-                .centerCrop()
-                .error(mDefaultBackground)
-                .into(new SimpleTarget<GlideDrawable>(width, height) {
-                    @Override
-                    public void onResourceReady(GlideDrawable resource,
-                                                GlideAnimation<? super GlideDrawable>
-                                                        glideAnimation) {
-                        mBackgroundManager.setDrawable(resource);
-                    }
-                });
-        mBackgroundTimer.cancel();
-    }
-
-    private void startBackgroundTimer() {
-        if (null != mBackgroundTimer) {
-            mBackgroundTimer.cancel();
+    private void saveToDrama(Drama[] dramas) {
+        for(int i = 0; i < dramas.length; i ++) {
+            dramas[i].urlHome = TvSource.urlHome();
         }
-        mBackgroundTimer = new Timer();
-        mBackgroundTimer.schedule(new UpdateBackgroundTask(), BACKGROUND_UPDATE_DELAY);
+        DataAccess.getInstance(getActivity().getApplicationContext())
+                .vodDao().insertVod(dramas)
+                .subscribeOn(Schedulers.io())
+                .subscribe(() -> Log.d(TAG, "vodDao insertVod"), err -> err.printStackTrace());
     }
 
     private final class ItemViewClickedListener implements OnItemViewClickedListener {
@@ -218,7 +219,7 @@ public class MainFragment extends BrowseFragment {
                 Drama movie = (Drama) item;
                 Log.d(TAG, "Item: " + item.toString());
                 Intent intent = new Intent(getActivity(), WebDetailActivity.class);
-                intent.putExtra(TVduboku.IntentDrama, movie);
+                intent.putExtra(TvSource.INTENT_DRAMA, movie);
 
                 Bundle bundle = ActivityOptionsCompat.makeSceneTransitionAnimation(
                         getActivity(),
@@ -230,6 +231,14 @@ public class MainFragment extends BrowseFragment {
                 if (((String) item).contains(getString(R.string.error_fragment))) {
                     Intent intent = new Intent(getActivity(), BrowseErrorActivity.class);
                     startActivity(intent);
+                } else if(item.equals(getString(R.string.tv_name_duboku))) {
+                    Log.d(TAG, "switch to duboku");
+                    TvSource.setSharedPreferencesUrlHome(getActivity(), TvDuboku.urlHome());
+                    startActivity(new Intent(getActivity(), WebMainActivity.class));
+                } else if(item.equals(getString(R.string.tv_name_olevod))) {
+                    Log.d(TAG, "switch to olevod");
+                    TvSource.setSharedPreferencesUrlHome(getActivity(), TvOlevod.urlHome());
+                    startActivity(new Intent(getActivity(), WebMainActivity.class));
                 } else {
                     Toast.makeText(getActivity(), ((String) item), Toast.LENGTH_SHORT).show();
                 }
@@ -246,19 +255,37 @@ public class MainFragment extends BrowseFragment {
                 Row row) {
             if (item instanceof Drama) {
                 mBackgroundUri = ((Drama) item).image;
-                startBackgroundTimer();
+                if (null != mBackgroundTimer) {
+                    mBackgroundTimer.cancel();
+                }
+                mBackgroundTimer = new Timer();
+                mBackgroundTimer.schedule(new UpdateBackgroundTask(), BACKGROUND_UPDATE_DELAY);
             }
         }
     }
 
     private class UpdateBackgroundTask extends TimerTask {
-
         @Override
         public void run() {
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    updateBackground(mBackgroundUri);
+                    //updateBackground(mBackgroundUri);
+                    int width = mMetrics.widthPixels;
+                    int height = mMetrics.heightPixels;
+                    Glide.with(getActivity())
+                            .load(mBackgroundUri)
+                            .centerCrop()
+                            .error(mDefaultBackground)
+                            .into(new SimpleTarget<GlideDrawable>(width, height) {
+                                @Override
+                                public void onResourceReady(GlideDrawable resource,
+                                                            GlideAnimation<? super GlideDrawable>
+                                                                    glideAnimation) {
+                                    mBackgroundManager.setDrawable(resource);
+                                }
+                            });
+                    mBackgroundTimer.cancel();
                 }
             });
         }
@@ -286,43 +313,5 @@ public class MainFragment extends BrowseFragment {
         @Override
         public void onUnbindViewHolder(ViewHolder viewHolder) {
         }
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        Log.d(TAG, "onActivityResult: " + requestCode);
-        try {
-            if (requestCode == 123) {
-                Drama[] result = (Drama[]) intent.getSerializableExtra(TVduboku.IntentSearch);
-                Log.d(TAG, "onActivityResult: " + result.length);
-                if(result.length > 0) {
-                    saveToDrama(result);
-                    updateRows(result);
-                    loadRows();
-                }
-            }
-        } catch (Exception error) {
-            error.printStackTrace();
-            Toast.makeText(getActivity(), error.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void updateRows(Drama[] data) {
-        Log.d(TAG, "updateRows - dram length: " + dramas.length);
-        Log.d(TAG, "updateRows - new length: " + data.length);
-        if (data.length == 0) { return; }
-
-        HashSet<String> pk = new HashSet<>();
-        LinkedList<Drama> all = new LinkedList<>();
-        for (int i = 0; i < data.length; i++) {
-            if (pk.add(data[i].url + data[i].category))
-                all.add(data[i]);
-        }
-        for (int i = 0; i < dramas.length; i++) {
-            if (pk.add(dramas[i].url + dramas[i].category))
-                all.add(dramas[i]);
-        }
-        dramas = all.toArray(new Drama[0]);
-        Log.d(TAG, "updateRows - dram length: " + dramas.length);
     }
 }

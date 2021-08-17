@@ -1,4 +1,4 @@
-package com.arieleo.webtview;
+package com.arieleo.webtview.web;
 
 import android.content.Context;
 import android.util.Log;
