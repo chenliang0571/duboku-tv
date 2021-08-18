@@ -6,7 +6,8 @@ public class TvData {
            String jsPlay, String jsPause,
            String jsForward, String jsBackward,
            String jsLoadMeta, String jsSearchResults,
-           String jsLoadEpisodes) {
+           String jsLoadEpisodes, String jsSetCurrentTime,
+           String jsGetCurrentTime) {
         this.title = title;
         this.urlHome = urlHome;
         this.urlSearch = urlSearch;
@@ -18,6 +19,8 @@ public class TvData {
         this.jsLoadMeta = jsLoadMeta;
         this.jsSearchResults = jsSearchResults;
         this.jsLoadEpisodes = jsLoadEpisodes;
+        this.jsSetCurrentTime = jsSetCurrentTime;
+        this.jsGetCurrentTime = jsGetCurrentTime;
     }
 
     String title;
@@ -31,4 +34,6 @@ public class TvData {
     String jsLoadMeta;
     String jsSearchResults;
     String jsLoadEpisodes;
+    String jsSetCurrentTime;
+    String jsGetCurrentTime;
 }

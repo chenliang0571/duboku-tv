@@ -17,10 +17,11 @@ import com.arieleo.webtview.room.Drama;
 import com.arieleo.webtview.room.Episode;
 import com.google.gson.Gson;
 
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
 public class WebDetailActivity extends FragmentActivity {
-    private static final String TAG = "WebDetailActivity";
+    private static final String TAG = "WebDetailActivity-DDD";
     private Drama drama;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,10 +62,12 @@ public class WebDetailActivity extends FragmentActivity {
                 .vodDao()
                 .loadHistoryByDrama(drama.url)
                 .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(history -> {
                     Log.d(TAG, "vodDao loadHistoryById " + history.size());
                     for(int i = 0; i < history.size(); i ++) {
-                        drama.tag += "\n" + history.get(i).title + " - " + history.get(i).upd;
+                        drama.tag += "\n" + history.get(i).title + " - " + history.get(i).upd
+                                + " | " + history.get(i).currentTime;
                     }
                 }, err -> err.printStackTrace());
     }

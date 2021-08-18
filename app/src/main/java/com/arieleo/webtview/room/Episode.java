@@ -24,6 +24,8 @@ public class Episode implements Serializable {
     public String dramaTitle;
     @NonNull
     public String upd;
+    @ColumnInfo(name = "current_time")
+    public String currentTime;
 
     @Override
     public String toString() {
@@ -34,6 +36,7 @@ public class Episode implements Serializable {
                 ", dramaUrl='" + dramaUrl + '\'' +
                 ", dramaTitle='" + dramaTitle + '\'' +
                 ", upd='" + upd + '\'' +
+                ", currentTime='" + currentTime + '\'' +
                 '}';
     }
 }

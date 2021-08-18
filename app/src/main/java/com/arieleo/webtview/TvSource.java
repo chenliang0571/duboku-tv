@@ -24,13 +24,15 @@ public final class TvSource {
                 TvDuboku.jsPlay(), TvDuboku.jsPause(),
                 TvDuboku.jsForward(), TvDuboku.jsBackward(),
                 TvDuboku.jsLoadMeta(), TvDuboku.jsSearchResults(),
-                TvDuboku.jsLoadEpisodes()));
+                TvDuboku.jsLoadEpisodes(), TvDuboku.jsSetCurrentTime(),
+                TvDuboku.jsGetCurrentTime()));
         config.put(TvOlevod.urlHome(), new TvData(TvOlevod.title(), TvOlevod.urlHome(),
                 TvOlevod.urlSearch(), TvOlevod.jsStart(),
                 TvOlevod.jsPlay(), TvOlevod.jsPause(),
                 TvOlevod.jsForward(), TvOlevod.jsBackward(),
                 TvOlevod.jsLoadMeta(), TvOlevod.jsSearchResults(),
-                TvOlevod.jsLoadEpisodes()));
+                TvOlevod.jsLoadEpisodes(), TvOlevod.jsSetCurrentTime(),
+                TvOlevod.jsGetCurrentTime()));
     }
     public static void setSharedPreferencesUrlHome(Context context, String urlHome) {
         SharedPreferences sharedPref = context.getSharedPreferences("arieleo.key", Context.MODE_PRIVATE);
@@ -89,6 +91,14 @@ public final class TvSource {
 
     public static String jsLoadEpisodes() {
         return config.get(urlHome).jsLoadEpisodes;
+    }
+
+    public static String jsSetCurrentTime() {
+        return config.get(urlHome).jsSetCurrentTime;
+    }
+
+    public static String jsGetCurrentTime() {
+        return config.get(urlHome).jsGetCurrentTime;
     }
 
     public static final String JsTest = "(function() {\n" +

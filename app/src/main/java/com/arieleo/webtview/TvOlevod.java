@@ -176,4 +176,36 @@ public class TvOlevod {
         "    return JSON.stringify(items);" +
         "})()";
     }
+    static String jsSetCurrentTime() {
+        return
+        "(function(time=Number.NaN) {\n" +
+        "    const iframe = document.querySelector('iframe[src=\\\"/static/player/plyr2.html\\\"]')\n" +
+        "    console.log('iframe ' + (iframe?iframe.tagName:'null'));\n" +
+        "    if(!iframe) return 'iframe-null';\n" +
+        "    const video = iframe.contentWindow.document.querySelector('video');\n" +
+        "    console.log('time ' + (video?video.tagName:'null'));\n" +
+        "    const currentTime = Number(time);\n" +
+        "    if(currentTime > 0 && video) {\n" +
+        "       video.currentTime = currentTime;\n" +
+        "       return 'time'\n" +
+        "    } else {\n" +
+        "       return 'time-null'\n" +
+        "    }\n" +
+        "})()";
+    }
+    static String jsGetCurrentTime() {
+        return
+        "(function() {\n" +
+        "    const iframe = document.querySelector('iframe[src=\\\"/static/player/plyr2.html\\\"]')\n" +
+        "    console.log('iframe ' + (iframe?iframe.tagName:'null'));\n" +
+        "    if(!iframe) return 'iframe-null';\n" +
+        "    const video = iframe.contentWindow.document.querySelector('video');\n" +
+        "    console.log('time ' + (video?video.tagName:'null'));\n" +
+        "    if(video) {\n" +
+        "       return 'current-time-' + video.currentTime;\n" +
+        "    } else {\n" +
+        "       return 'current-time-null'\n" +
+        "    }\n" +
+        "})()";
+    }
 }

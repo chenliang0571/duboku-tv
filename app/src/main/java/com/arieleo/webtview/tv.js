@@ -123,3 +123,21 @@
        return 'video-null'
     }
 })();
+
+/**
+* jsSetCurrentTime
+*/
+(function(time=Number.NaN) {
+    const iframe = document.querySelector('iframe[src=\"/static/player/plyr2.html\"]')
+    console.log('iframe ' + (iframe?iframe.tagName:'null'));
+    if(!iframe) return 'iframe-null';
+    const video = iframe.contentWindow.document.querySelector('video');
+    console.log('time ' + (video?video.tagName:'null'));
+    const currentTime = Number(time);
+    if(currentTime > 0 && video) {
+       video.currentTime = currentTime;
+       return 'time'
+    } else {
+       return 'time-null'
+    }
+})();
