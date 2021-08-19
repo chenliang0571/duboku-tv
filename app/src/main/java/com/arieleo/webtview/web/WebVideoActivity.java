@@ -15,6 +15,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
@@ -26,6 +27,7 @@ import com.arieleo.webtview.room.Episode;
 import com.arieleo.webtview.room.VodDao;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class WebVideoActivity extends FragmentActivity {
@@ -39,13 +41,19 @@ public class WebVideoActivity extends FragmentActivity {
     private Episode episode;
     private VodDao dao;
     private String currentTime = null;
-    final Handler handler = new Handler();
+    private Disposable loadHistoryByIdDisposable;
+    private Disposable updateCurrentTimeDisposable;
+    private Disposable insertHistoryDisposable;
+    private final Handler handler = new Handler();
+    private ProgressBar spinner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_web_main);
 
+        spinner = findViewById(R.id.progress_bar);
+        spinner.setVisibility(View.VISIBLE);
         dao = DataAccess.getInstance(getApplicationContext()).vodDao();
 
         WebView webView = findViewById(R.id.web_view);
@@ -63,6 +71,7 @@ public class WebVideoActivity extends FragmentActivity {
                 super.onPageFinished(view, url);
                 Log.d(TAG, url);
                 play(webView, TvSource.jsStart());
+                spinner.setVisibility(View.GONE);
             }
 
             @Override
@@ -110,9 +119,19 @@ public class WebVideoActivity extends FragmentActivity {
     }
 
     @Override
-    protected void onPause() {
+    protected void onStop() {
+        Log.d(TAG, "onStop");
         handler.removeCallbacksAndMessages(null);
-        super.onPause();
+        if(loadHistoryByIdDisposable != null && !loadHistoryByIdDisposable.isDisposed()) {
+            loadHistoryByIdDisposable.dispose();
+        }
+        if(updateCurrentTimeDisposable != null && !updateCurrentTimeDisposable.isDisposed()) {
+            updateCurrentTimeDisposable.dispose();
+        }
+        if(insertHistoryDisposable != null && !insertHistoryDisposable.isDisposed()) {
+            insertHistoryDisposable.dispose();
+        }
+        super.onStop();
     }
 
     public void showToast(String toast) {
@@ -128,7 +147,7 @@ public class WebVideoActivity extends FragmentActivity {
             } else if (s.contains("video-start-")) {
                 episode.upd = s.replace("video-start-", "").replace("\"", "");
                 episode.urlHome = TvSource.urlHome();
-                dao.loadHistoryById(episode.url)
+                loadHistoryByIdDisposable = dao.loadHistoryById(episode.url)
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .flatMapCompletable(ep -> {
@@ -137,7 +156,7 @@ public class WebVideoActivity extends FragmentActivity {
                         })
                         .subscribe(() -> {
                                     if (currentTime == null) {
-                                        dao.insertHistory(episode)
+                                        insertHistoryDisposable = dao.insertHistory(episode)
                                                 .subscribeOn(Schedulers.io())
                                                 .observeOn(AndroidSchedulers.mainThread())
                                                 .subscribe(() -> Log.d(TAG, "vodDao insert History " + episode), err -> err.printStackTrace());
@@ -152,7 +171,7 @@ public class WebVideoActivity extends FragmentActivity {
                 String time = s.replace("current-time-", "").replace("\"", "");
                 try {
                     if (Float.parseFloat(time) > 0) {
-                        dao.updateCurrentTime(episode.url, time)
+                        updateCurrentTimeDisposable = dao.updateCurrentTime(episode.url, time)
                                 .subscribeOn(Schedulers.io())
                                 .observeOn(AndroidSchedulers.mainThread())
                                 .subscribe(() -> Log.d(TAG, "vodDao updateCurrentTime " + episode.url + " - " + time),
