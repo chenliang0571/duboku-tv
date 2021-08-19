@@ -2,7 +2,7 @@ package com.arieleo.webtview;
 
 public class TvDuboku {
     static String title() {
-        return "独播库duboku.com";
+        return "独播库\nduboku.com";
     }
     static String urlHome() {
         return "https://www.duboku.com/";

@@ -3,6 +3,7 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/workspace/WebTView/app/src/main/res/drawable-v24/ic_banner_foreground.xml" value="0.2921875" />
         <entry key="..\:/workspace/WebTView/app/src/main/res/layout/activity_details.xml" value="0.140625" />
         <entry key="..\:/workspace/WebTView/app/src/main/res/layout/activity_web_main.xml" value="0.18603439291297552" />
         <entry key="..\:/workspace/WebTView/app/src/main/res/mipmap-anydpi-v26/ic_launcher_debug.xml" value="0.34765625" />

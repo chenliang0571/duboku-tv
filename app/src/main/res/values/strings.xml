@@ -1,9 +1,9 @@
 <resources>
     <string name="app_name">倒影TV</string>
     <string-array name="tv_config_titles">
-        <item>独播库duboku.com</item>
-        <item>欧乐影院olevod.com</item>
-        <item>唐人街影视</item>
+        <item>独播库\nduboku.com</item>
+        <item>欧乐影院\nolevod.com</item>
+        <item>唐人街影视\ntangrenjie.tv</item>
     </string-array>
     <string name="js_inject">
         (function() {
@@ -19,7 +19,7 @@
     <string name="grid_view">Grid View</string>
     <string name="error_fragment">Error Fragment</string>
     <!-- Error messages -->
-    <string name="error_not_implemented">切换失败\n没有找到相应配置</string>
+    <string name="error_not_implemented">切换失败</string>
     <string name="error_fragment_message">An error occurred</string>
     <string name="dismiss_error">Dismiss</string>
     <string name="title_activity_search_result">Leanback Title</string>

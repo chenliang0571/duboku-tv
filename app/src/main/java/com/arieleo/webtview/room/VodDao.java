@@ -31,7 +31,7 @@ public interface VodDao {
     @Query("SELECT * from history where url = :url LIMIT 1")
     Maybe<Episode> loadHistoryById(String url);
 
-    @Query("SELECT * from history where drama_url = :url order by upd desc LIMIT 10")
+    @Query("SELECT * from history where drama_url = :url order by upd desc LIMIT 15")
     Maybe<List<Episode>> loadHistoryByDrama(String url);
 
     @Query("SELECT distinct dramas.title,dramas.url,dramas.image,dramas.tag," +

@@ -242,14 +242,13 @@ public class MainFragment extends BrowseFragment {
                     startActivity(new Intent(getActivity(), WebMainActivity.class));
                     getActivity().finish();
                 } else {
-                    Toast.makeText(getActivity(), item + "\n\n"
-                            + getString(R.string.error_not_implemented), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity(), getString(R.string.error_not_implemented), Toast.LENGTH_SHORT).show();
                 }
             }
         }
     }
 
-    private class GridItemPresenter extends Presenter {
+    private final class GridItemPresenter extends Presenter {
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent) {
             TextView view = new TextView(parent.getContext());

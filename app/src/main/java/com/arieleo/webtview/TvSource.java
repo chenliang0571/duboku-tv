@@ -52,7 +52,9 @@ public final class TvSource {
         SharedPreferences sharedPref = context.getSharedPreferences("arieleo.key", Context.MODE_PRIVATE);
         title = sharedPref.getString("HOME_TITLE", "");
         Log.i(TAG, "initialize title =" + title);
-        if(title.length() == 0) title = TvDuboku.title();
+        if(title.length() == 0 || (
+                !title.equals(TvDuboku.title()) && !title.equals(TvOlevod.title())
+        )) title = TvDuboku.title();
     }
 
     public static String title() {
