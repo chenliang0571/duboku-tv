@@ -10,15 +10,33 @@ android {
         applicationId "com.arieleo.webtview2"
         minSdkVersion 21
         targetSdkVersion 30
-        versionCode 1
-        versionName "1.0"
+        versionCode 5
+        versionName "1.2"
+    }
 
+    signingConfigs {
+        release {
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix ".dev"
+            manifestPlaceholders = [
+                    appIcon     : "@mipmap/ic_launcher_debug",
+                    appIconRound: "@mipmap/ic_launcher_debug_round"
+            ]
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            manifestPlaceholders = [
+                    appIcon     : "@mipmap/ic_launcher_release",
+                    appIconRound: "@mipmap/ic_launcher_release_round"
+            ]
+            signingConfig signingConfigs.release
         }
     }
     compileOptions {
