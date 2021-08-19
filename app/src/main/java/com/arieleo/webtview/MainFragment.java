@@ -48,6 +48,8 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class MainFragment extends BrowseFragment {
@@ -64,8 +66,8 @@ public class MainFragment extends BrowseFragment {
     private String mBackgroundUri;
     private BackgroundManager mBackgroundManager;
 
-    private TvSource source;
     private Drama[] dramas;
+    private Disposable insertVodDisposable;
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
@@ -93,7 +95,7 @@ public class MainFragment extends BrowseFragment {
         ///////////////setupEventListeners/////////////
         setOnSearchClickedListener(view -> search());
         setOnItemViewClickedListener(new ItemViewClickedListener());
-        setOnItemViewSelectedListener(new ItemViewSelectedListener());
+//        setOnItemViewSelectedListener(new ItemViewSelectedListener());
 
         dramas = (Drama[]) getActivity().getIntent().getSerializableExtra(TvSource.INTENT_DRAMAS);
         if (dramas != null && dramas.length > 0) {
@@ -113,6 +115,9 @@ public class MainFragment extends BrowseFragment {
         if (null != mBackgroundTimer) {
             Log.d(TAG, "onDestroy: " + mBackgroundTimer.toString());
             mBackgroundTimer.cancel();
+        }
+        if(insertVodDisposable != null && !insertVodDisposable.isDisposed()) {
+            insertVodDisposable.dispose();
         }
     }
     @Override
@@ -136,13 +141,13 @@ public class MainFragment extends BrowseFragment {
 
     private void loadRows() {
         LinkedHashMap<String, List<Drama>> categories = new LinkedHashMap<>();
-        for (int i = 0; i < dramas.length; i++) {
-            if (categories.containsKey(dramas[i].category)) {
-                categories.get(dramas[i].category).add(dramas[i]);
+        for (Drama drama : dramas) {
+            if (categories.containsKey(drama.category)) {
+                categories.get(drama.category).add(drama);
             } else {
                 List<Drama> items = new ArrayList<>();
-                items.add(dramas[i]);
-                categories.put(dramas[i].category, items);
+                items.add(drama);
+                categories.put(drama.category, items);
             }
         }
         //sort recent
@@ -162,12 +167,14 @@ public class MainFragment extends BrowseFragment {
             rowsAdapter.add(new ListRow(header, listRowAdapter));
         }
 
-        HeaderItem gridHeader = new HeaderItem(headerId, "PREFERENCES");
+        HeaderItem gridHeader = new HeaderItem(headerId, "切换视频源");
         GridItemPresenter mGridPresenter = new GridItemPresenter();
         ArrayObjectAdapter gridRowAdapter = new ArrayObjectAdapter(mGridPresenter);
-        gridRowAdapter.add(getResources().getString(R.string.tv_name_duboku));
-        gridRowAdapter.add(getResources().getString(R.string.tv_name_olevod));
-        gridRowAdapter.add(getString(R.string.error_fragment));
+        for(String title : getResources().getStringArray(R.array.tv_config_titles)) {
+            if(!title.contains(TvSource.title())) {
+                gridRowAdapter.add(title);
+            }
+        }
         rowsAdapter.add(new ListRow(gridHeader, gridRowAdapter));
 
         try {
@@ -183,13 +190,13 @@ public class MainFragment extends BrowseFragment {
 
         HashSet<String> pk = new HashSet<>();
         LinkedList<Drama> all = new LinkedList<>();
-        for (int i = 0; i < data.length; i++) {
-            if (pk.add(data[i].url + data[i].category))
-                all.add(data[i]);
+        for (Drama datum : data) {
+            if (pk.add(datum.url + datum.category))
+                all.add(datum);
         }
-        for (int i = 0; i < dramas.length; i++) {
-            if (pk.add(dramas[i].url + dramas[i].category))
-                all.add(dramas[i]);
+        for (Drama drama : dramas) {
+            if (pk.add(drama.url + drama.category))
+                all.add(drama);
         }
         dramas = all.toArray(new Drama[0]);
         Log.d(TAG, "updateRows - dram length: " + dramas.length);
@@ -201,13 +208,14 @@ public class MainFragment extends BrowseFragment {
         startActivityForResult(intent, 123);
     }
     private void saveToDrama(Drama[] dramas) {
-        for(int i = 0; i < dramas.length; i ++) {
-            dramas[i].urlHome = TvSource.urlHome();
+        for (Drama drama : dramas) {
+            drama.urlHome = TvSource.urlHome();
         }
-        DataAccess.getInstance(getActivity().getApplicationContext())
+        insertVodDisposable = DataAccess.getInstance(getActivity().getApplicationContext())
                 .vodDao().insertVod(dramas)
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
-                .subscribe(() -> Log.d(TAG, "vodDao insertVod"), err -> err.printStackTrace());
+                .subscribe(() -> Log.d(TAG, "vodDao insertVod"), Throwable::printStackTrace);
     }
 
     private final class ItemViewClickedListener implements OnItemViewClickedListener {
@@ -228,66 +236,16 @@ public class MainFragment extends BrowseFragment {
                         .toBundle();
                 getActivity().startActivity(intent, bundle);
             } else if (item instanceof String) {
-                if (((String) item).contains(getString(R.string.error_fragment))) {
-                    Intent intent = new Intent(getActivity(), BrowseErrorActivity.class);
-                    startActivity(intent);
-                } else if(item.equals(getString(R.string.tv_name_duboku))) {
-                    Log.d(TAG, "switch to duboku");
-                    TvSource.setSharedPreferencesUrlHome(getActivity(), TvDuboku.urlHome());
+                Log.d(TAG, TvSource.title() + " switch to " + item);
+                boolean res = TvSource.setSharedPreferencesUrlHome(getActivity(), (String) item);
+                if(res) {
                     startActivity(new Intent(getActivity(), WebMainActivity.class));
-                } else if(item.equals(getString(R.string.tv_name_olevod))) {
-                    Log.d(TAG, "switch to olevod");
-                    TvSource.setSharedPreferencesUrlHome(getActivity(), TvOlevod.urlHome());
-                    startActivity(new Intent(getActivity(), WebMainActivity.class));
+                    getActivity().finish();
                 } else {
-                    Toast.makeText(getActivity(), ((String) item), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity(), item + "\n\n"
+                            + getString(R.string.error_not_implemented), Toast.LENGTH_SHORT).show();
                 }
             }
-        }
-    }
-
-    private final class ItemViewSelectedListener implements OnItemViewSelectedListener {
-        @Override
-        public void onItemSelected(
-                Presenter.ViewHolder itemViewHolder,
-                Object item,
-                RowPresenter.ViewHolder rowViewHolder,
-                Row row) {
-            if (item instanceof Drama) {
-                mBackgroundUri = ((Drama) item).image;
-                if (null != mBackgroundTimer) {
-                    mBackgroundTimer.cancel();
-                }
-                mBackgroundTimer = new Timer();
-                mBackgroundTimer.schedule(new UpdateBackgroundTask(), BACKGROUND_UPDATE_DELAY);
-            }
-        }
-    }
-
-    private class UpdateBackgroundTask extends TimerTask {
-        @Override
-        public void run() {
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    //updateBackground(mBackgroundUri);
-                    int width = mMetrics.widthPixels;
-                    int height = mMetrics.heightPixels;
-                    Glide.with(getActivity())
-                            .load(mBackgroundUri)
-                            .centerCrop()
-                            .error(mDefaultBackground)
-                            .into(new SimpleTarget<GlideDrawable>(width, height) {
-                                @Override
-                                public void onResourceReady(GlideDrawable resource,
-                                                            GlideAnimation<? super GlideDrawable>
-                                                                    glideAnimation) {
-                                    mBackgroundManager.setDrawable(resource);
-                                }
-                            });
-                    mBackgroundTimer.cancel();
-                }
-            });
         }
     }
 

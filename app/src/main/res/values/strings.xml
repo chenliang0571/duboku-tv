@@ -1,21 +1,25 @@
 <resources>
     <string name="app_name">倒影TV</string>
-    <string name="tv_name_duboku">独播库</string>
-    <string name="tv_name_olevod">欧乐影院</string>
+    <string-array name="tv_config_titles">
+        <item>独播库duboku.com</item>
+        <item>欧乐影院olevod.com</item>
+        <item>唐人街影视</item>
+    </string-array>
+    <string name="js_inject">
+        (function() {
+            const tag = document.createElement("script");
+            tag.setAttribute("type", "text/javascript");
+            tag.id = "js_inject";
+            tag.setAttribute("src", "https://assets/tv.js");
+            document.head.appendChild(tag);
+        })()
+    </string>
     <string name="browse_title">Videos by 倒影TV</string>
     <string name="related_movies">Related Videos</string>
     <string name="grid_view">Grid View</string>
     <string name="error_fragment">Error Fragment</string>
-    <string name="personal_settings">Personal Settings</string>
-    <string name="watch_trailer_1">Watch trailer</string>
-    <string name="watch_trailer_2">FREE</string>
-    <string name="rent_1">Rent By Day</string>
-    <string name="rent_2">From $1.99</string>
-    <string name="buy_1">Buy and Own</string>
-    <string name="buy_2">AT $9.99</string>
-    <string name="movie">Movie</string>
-
     <!-- Error messages -->
+    <string name="error_not_implemented">切换失败\n没有找到相应配置</string>
     <string name="error_fragment_message">An error occurred</string>
     <string name="dismiss_error">Dismiss</string>
     <string name="title_activity_search_result">Leanback Title</string>

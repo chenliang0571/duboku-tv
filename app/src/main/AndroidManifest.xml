@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     package="com.arieleo.webtview">
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -21,7 +20,6 @@
         android:theme="@style/Theme.WebTView">
         <activity android:name=".MainActivity" />
         <activity android:name=".DetailsActivity" />
-        <activity android:name=".BrowseErrorActivity" />
         <activity android:name=".web.WebVideoActivity" android:noHistory="true"/>
         <activity android:name=".web.WebDetailActivity" android:noHistory="true"/>
         <activity android:name=".web.WebSearchActivity" android:noHistory="true"/>
@@ -33,7 +31,8 @@
             android:logo="@drawable/app_icon_your_company"
             android:screenOrientation="landscape"
             android:noHistory="true"
-            android:theme="@style/Theme.Leanback">
+            android:theme="@style/Theme.Leanback"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

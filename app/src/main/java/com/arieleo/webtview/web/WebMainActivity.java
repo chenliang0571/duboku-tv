@@ -1,10 +1,13 @@
 package com.arieleo.webtview.web;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
@@ -16,12 +19,16 @@ import com.arieleo.webtview.room.DataAccess;
 import com.arieleo.webtview.room.Drama;
 import com.google.gson.Gson;
 
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class WebMainActivity extends FragmentActivity {
     private static final String TAG = "WebActivity-DDD";
     private Drama[] recent;
+    private Disposable findRecentDisposable;
 
+    @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,9 +63,10 @@ public class WebMainActivity extends FragmentActivity {
         });
         webView.loadUrl(TvSource.urlHome());
 
-        DataAccess.getInstance(getApplicationContext())
+        findRecentDisposable = DataAccess.getInstance(getApplicationContext())
                 .vodDao().findRecent(TvSource.urlHome())
                 .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe((dramas) -> {
                             Log.d(TAG, "vodDao: findRecent " + dramas.size());
                             for (int i = 0; i < dramas.size(); i++) {
@@ -66,7 +74,16 @@ public class WebMainActivity extends FragmentActivity {
                             }
                             recent = dramas.toArray(new Drama[0]);
                         },
-                        err -> err.printStackTrace());
+                        Throwable::printStackTrace);
+    }
+
+    @Override
+    protected void onStop() {
+        Log.d(TAG, "onStop");
+        if(findRecentDisposable != null && !findRecentDisposable.isDisposed()) {
+            findRecentDisposable.dispose();
+        }
+        super.onStop();
     }
 
     private void gotoActivity(String s) {

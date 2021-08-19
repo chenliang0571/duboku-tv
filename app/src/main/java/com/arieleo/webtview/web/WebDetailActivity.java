@@ -1,5 +1,6 @@
 package com.arieleo.webtview.web;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,11 +19,14 @@ import com.arieleo.webtview.room.Episode;
 import com.google.gson.Gson;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class WebDetailActivity extends FragmentActivity {
     private static final String TAG = "WebDetailActivity-DDD";
     private Drama drama;
+    private Disposable loadHistoryDisposable;
+    @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,7 +62,7 @@ public class WebDetailActivity extends FragmentActivity {
         webView.loadUrl(drama.url);
 
         //load history
-        DataAccess.getInstance(getApplicationContext())
+        loadHistoryDisposable = DataAccess.getInstance(getApplicationContext())
                 .vodDao()
                 .loadHistoryByDrama(drama.url)
                 .subscribeOn(Schedulers.io())
@@ -66,10 +70,19 @@ public class WebDetailActivity extends FragmentActivity {
                 .subscribe(history -> {
                     Log.d(TAG, "vodDao loadHistoryById " + history.size());
                     for(int i = 0; i < history.size(); i ++) {
-                        drama.tag += "\n" + history.get(i).title + " - " + history.get(i).upd
-                                + " | " + history.get(i).currentTime;
+                        drama.tag += ("\n" + history.get(i).title + " - " + history.get(i).upd
+                                + " | " + history.get(i).currentTime);
                     }
-                }, err -> err.printStackTrace());
+                }, Throwable::printStackTrace);
+    }
+
+    @Override
+    protected void onStop() {
+        Log.d(TAG, "onStop");
+        if(loadHistoryDisposable != null && !loadHistoryDisposable.isDisposed()) {
+            loadHistoryDisposable.dispose();
+        }
+        super.onStop();
     }
 
     private void gotoActivity(String s) {
@@ -77,9 +90,9 @@ public class WebDetailActivity extends FragmentActivity {
             Gson gson = new Gson();
             Episode[] data = gson.fromJson(s, Episode[].class);
             Log.d(TAG, "Episodes Object length: " + data.length);
-            for (int i=0; i< data.length; i++) {
-                data[i].dramaTitle = drama.title;
-                data[i].dramaUrl = drama.url;
+            for (Episode datum : data) {
+                datum.dramaTitle = drama.title;
+                datum.dramaUrl = drama.url;
             }
             Intent intent = new Intent(this, DetailsActivity.class);
             intent.putExtra(TvSource.INTENT_EPISODES, data);

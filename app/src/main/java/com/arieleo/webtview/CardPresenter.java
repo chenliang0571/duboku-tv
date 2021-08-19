@@ -1,13 +1,11 @@
 package com.arieleo.webtview;
 
 import android.graphics.drawable.Drawable;
+import android.view.ViewGroup;
 
+import androidx.core.content.ContextCompat;
 import androidx.leanback.widget.ImageCardView;
 import androidx.leanback.widget.Presenter;
-import androidx.core.content.ContextCompat;
-
-import android.util.Log;
-import android.view.ViewGroup;
 
 import com.arieleo.webtview.room.Drama;
 import com.bumptech.glide.Glide;

@@ -14,19 +14,19 @@ public final class TvSource {
     public static final String INTENT_EPISODES = "episodes";
     public static final String INTENT_SEARCH = "search";
     public static final String INTENT_RECENT = "recent";
-    private static String urlHome = TvDuboku.urlHome();
+    private static String title = TvDuboku.title();
     private static HashMap<String, TvData> config;
 
     static {
         config = new HashMap<>();
-        config.put(TvDuboku.urlHome(), new TvData(TvDuboku.title(), TvDuboku.urlHome(),
+        config.put(TvDuboku.title(), new TvData(TvDuboku.title(), TvDuboku.urlHome(),
                 TvDuboku.urlSearch(), TvDuboku.jsStart(),
                 TvDuboku.jsPlay(), TvDuboku.jsPause(),
                 TvDuboku.jsForward(), TvDuboku.jsBackward(),
                 TvDuboku.jsLoadMeta(), TvDuboku.jsSearchResults(),
                 TvDuboku.jsLoadEpisodes(), TvDuboku.jsSetCurrentTime(),
                 TvDuboku.jsGetCurrentTime()));
-        config.put(TvOlevod.urlHome(), new TvData(TvOlevod.title(), TvOlevod.urlHome(),
+        config.put(TvOlevod.title(), new TvData(TvOlevod.title(), TvOlevod.urlHome(),
                 TvOlevod.urlSearch(), TvOlevod.jsStart(),
                 TvOlevod.jsPlay(), TvOlevod.jsPause(),
                 TvOlevod.jsForward(), TvOlevod.jsBackward(),
@@ -34,71 +34,77 @@ public final class TvSource {
                 TvOlevod.jsLoadEpisodes(), TvOlevod.jsSetCurrentTime(),
                 TvOlevod.jsGetCurrentTime()));
     }
-    public static void setSharedPreferencesUrlHome(Context context, String urlHome) {
-        SharedPreferences sharedPref = context.getSharedPreferences("arieleo.key", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putString("HOME_URL", urlHome);
-        boolean res = editor.commit();
-        Log.i(TAG, "setSharedPreferencesUrlHome urlHome =" + urlHome + "; result =" + res);
+    public static boolean setSharedPreferencesUrlHome(Context context, String title) {
+        TvData tv = config.get(title);
+        if(tv != null && !tv.title.equals(TvSource.title)) {
+            SharedPreferences sharedPref = context.getSharedPreferences("arieleo.key", Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putString("HOME_TITLE", title);
+            boolean res = editor.commit();
+            Log.i(TAG, "setSharedPreferencesUrlHome title =" + title + "; result =" + res);
+            return res;
+        } else {
+            return false;
+        }
     }
 
     public static void initialize(Context context) {
         SharedPreferences sharedPref = context.getSharedPreferences("arieleo.key", Context.MODE_PRIVATE);
-        urlHome = sharedPref.getString("HOME_URL", "");
-        Log.i(TAG, "initialize urlHome =" + urlHome);
-        if(urlHome.length() == 0) urlHome = TvDuboku.urlHome();
+        title = sharedPref.getString("HOME_TITLE", "");
+        Log.i(TAG, "initialize title =" + title);
+        if(title.length() == 0) title = TvDuboku.title();
     }
 
     public static String title() {
-        return config.get(urlHome).title;
+        return config.get(title).title;
     }
 
     public static String urlHome() {
-        return config.get(urlHome).urlHome;
+        return config.get(title).urlHome;
     }
 
     public static String urlSearch() {
-        return config.get(urlHome).urlSearch;
+        return config.get(title).urlSearch;
     }
 
     public static String jsStart() {
-        return config.get(urlHome).jsStart;
+        return config.get(title).jsStart;
     }
 
     public static String jsPlay() {
-        return config.get(urlHome).jsPlay;
+        return config.get(title).jsPlay;
     }
 
     public static String jsPause() {
-        return config.get(urlHome).jsPause;
+        return config.get(title).jsPause;
     }
 
     public static String jsForward() {
-        return config.get(urlHome).jsForward;
+        return config.get(title).jsForward;
     }
 
     public static String jsBackward() {
-        return config.get(urlHome).jsBackward;
+        return config.get(title).jsBackward;
     }
 
     public static String jsLoadMeta() {
-        return config.get(urlHome).jsLoadMeta;
+        return config.get(title).jsLoadMeta;
     }
 
     public static String jsSearchResults() {
-        return config.get(urlHome).jsSearchResults;
+        return config.get(title).jsSearchResults;
     }
 
     public static String jsLoadEpisodes() {
-        return config.get(urlHome).jsLoadEpisodes;
+        return config.get(title).jsLoadEpisodes;
     }
 
     public static String jsSetCurrentTime() {
-        return config.get(urlHome).jsSetCurrentTime;
+        return config.get(title).jsSetCurrentTime;
     }
 
     public static String jsGetCurrentTime() {
-        return config.get(urlHome).jsGetCurrentTime;
+        return config.get(title).jsGetCurrentTime;
     }
 
     public static final String JsTest = "(function() {\n" +

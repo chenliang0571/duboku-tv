@@ -2,7 +2,6 @@ package com.arieleo.webtview;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,7 +12,7 @@ import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
 import androidx.leanback.app.DetailsFragment;
-import androidx.leanback.app.DetailsFragmentBackgroundController;
+import androidx.leanback.widget.AbstractDetailsDescriptionPresenter;
 import androidx.leanback.widget.Action;
 import androidx.leanback.widget.ArrayObjectAdapter;
 import androidx.leanback.widget.ClassPresenterSelector;
@@ -45,12 +44,10 @@ import java.util.List;
  * LeanbackDetailsFragment extends DetailsFragment, a Wrapper fragment for leanback details screens.
  * It shows a detailed view of video and its meta plus related videos.
  */
-public class VideoDetailsFragment extends DetailsFragment {
+public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
     private static final String TAG = "VideoDetailsFragment";
 
     private static final int ACTION_WATCH_TRAILER = 1;
-    private static final int ACTION_RENT = 2;
-    private static final int ACTION_BUY = 3;
 
     private static final int DETAIL_THUMB_WIDTH = 274;
     private static final int DETAIL_THUMB_HEIGHT = 274;
@@ -60,14 +57,10 @@ public class VideoDetailsFragment extends DetailsFragment {
     private ArrayObjectAdapter mAdapter;
     private ClassPresenterSelector mPresenterSelector;
 
-    private DetailsFragmentBackgroundController mDetailsBackground;
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate DetailsFragment");
         super.onCreate(savedInstanceState);
-
-        mDetailsBackground = new DetailsFragmentBackgroundController(this);
 
         mSelectedMovie =
                 (Drama) getActivity().getIntent().getSerializableExtra(TvSource.INTENT_DRAMA);
@@ -85,29 +78,11 @@ public class VideoDetailsFragment extends DetailsFragment {
             setupRelatedMovieListRow(episodes);
 
             setAdapter(mAdapter);
-            initializeBackground(mSelectedMovie);
             setOnItemViewClickedListener(new ItemViewClickedListener());
         } else {
             Intent intent = new Intent(getActivity(), MainActivity.class);
             startActivity(intent);
         }
-    }
-
-    private void initializeBackground(Drama data) {
-        mDetailsBackground.enableParallax();
-        Glide.with(getActivity())
-                .load(data.image)
-                .asBitmap()
-                .centerCrop()
-                .error(R.drawable.default_background)
-                .into(new SimpleTarget<Bitmap>() {
-                    @Override
-                    public void onResourceReady(Bitmap bitmap,
-                                                GlideAnimation<? super Bitmap> glideAnimation) {
-                        mDetailsBackground.setCoverBitmap(bitmap);
-                        mAdapter.notifyArrayItemRangeChanged(0, mAdapter.size());
-                    }
-                });
     }
 
     private void setupDetailsOverviewRow() {
@@ -134,21 +109,6 @@ public class VideoDetailsFragment extends DetailsFragment {
 
         ArrayObjectAdapter actionAdapter = new ArrayObjectAdapter();
 
-//        actionAdapter.add(
-//                new Action(
-//                        ACTION_WATCH_TRAILER,
-//                        "-剧集排序-",
-//                        ""));
-//        actionAdapter.add(
-//                new Action(
-//                        ACTION_RENT,
-//                        getResources().getString(R.string.rent_1),
-//                        getResources().getString(R.string.rent_2)));
-//        actionAdapter.add(
-//                new Action(
-//                        ACTION_BUY,
-//                        getResources().getString(R.string.buy_1),
-//                        getResources().getString(R.string.buy_2)));
         row.setActionsAdapter(actionAdapter);
 
         mAdapter.add(row);
@@ -169,25 +129,15 @@ public class VideoDetailsFragment extends DetailsFragment {
         detailsPresenter.setListener(sharedElementHelper);
         detailsPresenter.setParticipatingEntranceTransition(true);
 
-        detailsPresenter.setOnActionClickedListener(new OnActionClickedListener() {
-            @Override
-            public void onActionClicked(Action action) {
-                if (action.getId() == ACTION_WATCH_TRAILER) {
-//                    Intent intent = new Intent(getActivity(), PlaybackActivity.class);
-//                    intent.putExtra(DetailsActivity.MOVIE, mSelectedMovie);
-//                    startActivity(intent);
-                } else {
-                    Toast.makeText(getActivity(), action.toString(), Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+        detailsPresenter.setOnActionClickedListener(action -> Toast.makeText(getActivity(),
+                action.toString() + " " + action.getId(), Toast.LENGTH_SHORT).show());
         mPresenterSelector.addClassPresenter(DetailsOverviewRow.class, detailsPresenter);
     }
 
     private void setupRelatedMovieListRow(Episode[] episodes) {
         ArrayObjectAdapter listRowAdapter = new ArrayObjectAdapter(new EpisodesItemPresenter());
-        for (int j = 0; j < episodes.length; j++) {
-            listRowAdapter.add(episodes[j]);
+        for (Episode episode : episodes) {
+            listRowAdapter.add(episode);
         }
 
         HeaderItem header = new HeaderItem(0, "episodes");
@@ -206,7 +156,7 @@ public class VideoDetailsFragment extends DetailsFragment {
         return Math.round((float) dp * density);
     }
 
-    private class EpisodesItemPresenter extends Presenter {
+    private final class EpisodesItemPresenter extends Presenter {
         private static final int GRID_ITEM_WIDTH = 200;
         private static final int GRID_ITEM_HEIGHT = 200;
         @Override
@@ -262,6 +212,19 @@ public class VideoDetailsFragment extends DetailsFragment {
                 Intent intent = new Intent(getActivity(), WebVideoActivity.class);
                 intent.putExtra(TvSource.INTENT_EPISODE, (Episode)item);
                 getActivity().startActivity(intent);
+            }
+        }
+    }
+    private final class DetailsDescriptionPresenter extends AbstractDetailsDescriptionPresenter {
+
+        @Override
+        protected void onBindDescription(ViewHolder viewHolder, Object item) {
+            Drama movie = (Drama) item;
+
+            if (movie != null) {
+                viewHolder.getTitle().setText(movie.title);
+                viewHolder.getSubtitle().setText(movie.picText);
+                viewHolder.getBody().setText(movie.tag);
             }
         }
     }

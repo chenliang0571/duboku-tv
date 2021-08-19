@@ -2,7 +2,7 @@ package com.arieleo.webtview;
 
 public class TvOlevod {
     static String title() {
-        return "olevod.com";
+        return "欧乐影院olevod.com";
     }
     static String urlHome() {
         return "https://www.olevod.com/";

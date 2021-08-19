@@ -1,5 +1,6 @@
 package com.arieleo.webtview.web;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -20,6 +21,7 @@ import com.google.gson.Gson;
 public class WebSearchActivity extends FragmentActivity {
     private static final String TAG = "WebActivity";
 
+    @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -28,7 +30,7 @@ public class WebSearchActivity extends FragmentActivity {
         WebView webView = findViewById(R.id.web_view);
 //        webView.setWebContentsDebuggingEnabled(true);
         webView.getSettings().setJavaScriptEnabled(true);
-//        webView.getSettings().setLoadsImagesAutomatically(false);
+        webView.getSettings().setLoadsImagesAutomatically(false);
         webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         webView.addJavascriptInterface(new WebAppInterface(this), "Android");
         webView.setWebViewClient(new WebViewClient() {
@@ -62,7 +64,7 @@ public class WebSearchActivity extends FragmentActivity {
         builder.setPositiveButton("搜索", (di, i) -> {
             final String wd = text.getText().toString();
             Log.d(TAG, "onClick: " + wd);
-            if (wd != null && wd.length() > 0) {
+            if (wd.length() > 0) {
                 webView.loadUrl(TvSource.urlSearch() + wd);
             } else {
                 Toast.makeText(this, "ERROR keyword", Toast.LENGTH_LONG).show();
