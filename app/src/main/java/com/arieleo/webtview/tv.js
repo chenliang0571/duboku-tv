@@ -75,27 +75,19 @@
     });
     document.querySelectorAll('div.OUTBRAIN').forEach(node => node.innerHTML = "");
     const header = document.querySelector('#play_page > div.hot_banner');
-    if(header) header.innerHTML = "";
+    if(header) header.style.display = 'none';
     const foot = document.querySelector('#play_page > div.foot_nav');
-    if(foot) foot.innerHTML = "";
+    if(foot) foot.style.display = 'none';
     const ad = document.querySelector('#play_page > div.container');
-    if(ad) ad.innerHTML = "";
-    const right = document.querySelector('#play_page div.container div.right_row ');
-    if(right) right.style.display = 'none';
-    const boxbg = document.querySelector('#play_page div.play_boxbg');
-    if(boxbg) boxbg.style = 'height: 100% !important;';
+    if(ad) ad.style.display = 'none';
     const iframe = document.querySelector('iframe[src=\"/static/player/plyr2.html\"]')
     console.log('iframe ' + (iframe?iframe.tagName:'null'));
     if(!iframe) return 'iframe-null';
     const video = iframe.contentWindow.document.querySelector('video');
     console.log('video ' + (video?video.tagName:'null'));
     if(video) {
+       iframe.style = "position:fixed !important;top:0px !important;width:100% !important;height:100% !important;background:rgb(221,221,221);z-index:2147483647 !important;"
        video.play();
-       video.scrollIntoView();
-//       const container = document.querySelector('#play_page div.container');
-//       if(container) container.style = 'width: auto !important; height: auto !important; margin-left:5px !important; margin-right:5px !important';
-       const div = document.querySelector('#play_page div.container div.left_row');
-       if(div) div.style = 'width: 90% !important; height: auto !important;';
        if(video.webkitRequestFullScreen) video.webkitRequestFullScreen();
        return 'video-start-' + new Date().toISOString()
     } else {
@@ -117,7 +109,6 @@
     console.log('video ' + (video?video.tagName:'null'));
     if(video) {
        video.play();
-       video.scrollIntoView();
        return 'play'
     } else {
        return 'video-null'

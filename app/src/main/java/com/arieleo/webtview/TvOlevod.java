@@ -18,25 +18,19 @@ public class TvOlevod {
         "    });\n" +
         "    document.querySelectorAll('div.OUTBRAIN').forEach(node => node.innerHTML = \"\");\n" +
         "    const header = document.querySelector('#play_page > div.hot_banner');\n" +
-        "    if(header) header.innerHTML = \"\";\n" +
+        "    if(header) header.style.display = 'none';\n" +
         "    const foot = document.querySelector('#play_page > div.foot_nav');\n" +
-        "    if(foot) foot.innerHTML = \"\";\n" +
+        "    if(foot) foot.style.display = 'none';\n" +
         "    const ad = document.querySelector('#play_page > div.container');\n" +
-        "    if(ad) ad.innerHTML = \"\";\n" +
-        "    const right = document.querySelector('#play_page div.container div.right_row ');\n" +
-        "    if(right) right.style.display = 'none';\n" +
-        "    const boxbg = document.querySelector('#play_page div.play_boxbg');\n" +
-        "    if(boxbg) boxbg.style = 'height: 1080px !important;';\n" +
+        "    if(ad) ad.style.display = 'none';\n" +
         "    const iframe = document.querySelector('iframe[src=\\\"/static/player/plyr2.html\\\"]')\n" +
         "    console.log('iframe ' + (iframe?iframe.tagName:'null'));\n" +
         "    if(!iframe) return 'iframe-null';\n" +
         "    const video = iframe.contentWindow.document.querySelector('video');\n" +
         "    console.log('video ' + (video?video.tagName:'null'));\n" +
         "    if(video) {\n" +
+        "       iframe.style = \"position:fixed !important;top:0px !important;width:100% !important;height:100% !important;background:rgb(221,221,221);z-index:2147483647 !important;\"\n" +
         "       video.play();\n" +
-        "       video.scrollIntoView();\n" +
-        "       const div = document.querySelector('#play_page div.container div.left_row');\n" +
-        "       if(div) div.style = 'width: 85% !important; height: auto !important;';\n" +
         "       if(video.webkitRequestFullScreen) video.webkitRequestFullScreen();\n" +
         "       return 'video-start-' + new Date().toISOString()\n" +
         "    } else {\n" +

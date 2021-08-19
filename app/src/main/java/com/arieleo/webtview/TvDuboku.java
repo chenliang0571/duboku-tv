@@ -13,21 +13,17 @@ public class TvDuboku {
     static String jsStart() {
         return
         "(function() {\n" +
+        "    const header = document.querySelector('body > header');\n" +
+        "    if(header) header.style.display=\"none\";\n" +
         "    const iframe = document.querySelector('iframe[src=\"/static/player/videojs.html\"]')\n" +
         "    console.log('iframe ' + (iframe?iframe.tagName:'null'));\n" +
         "    if(!iframe) return 'iframe-null';\n" +
         "    const video = iframe.contentWindow.document.querySelector('video');\n" +
         "    console.log('video ' + (video?video.tagName:'null'));\n" +
         "    if(video) {" +
+        "       iframe.style = \"position:fixed !important;top:0px !important;width:100% !important;height:100% !important;background:rgb(221,221,221);z-index:2147483647 !important;\"\n" +
         "       video.play();" +
-        "       video.scrollIntoView();" +
-        //Failed to execute 'requestFullScreen' on 'Element': API can only be initiated by a user gesture.
-        //"       if(video.requestFullScreen) video.requestFullscreen();\n" +
-        "       if(document.querySelector('a[class=btnskin]')) document.querySelector('a[class=btnskin]').click();" +
-        "       const container = document.querySelector('body > div.container');" +
-        "       if(container) container.style = 'height: auto !important; padding-left:0px !important; padding-right:0px !important';" +
-        "       const div = document.querySelector('body > div.container > div > div');" +
-        "       if(div) div.style = 'width: 100% !important; height: auto !important;';" +
+//        "       video.scrollIntoView();" +
         "       if(video.webkitRequestFullScreen) video.webkitRequestFullScreen();\n" +
         "       return 'video-start-' + new Date().toISOString()\n" +
         "    } else {\n" +
@@ -45,7 +41,7 @@ public class TvDuboku {
         "    console.log('video ' + (video?video.tagName:'null'));\n" +
         "    if(video) {" +
         "       video.play();" +
-        "       video.scrollIntoView();" +
+//        "       video.scrollIntoView();" +
         "       return 'play'\n" +
         "    } else {\n" +
         "       return 'video-null'\n" +
