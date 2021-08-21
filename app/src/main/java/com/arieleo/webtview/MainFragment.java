@@ -22,20 +22,15 @@ import androidx.leanback.widget.ImageCardView;
 import androidx.leanback.widget.ListRow;
 import androidx.leanback.widget.ListRowPresenter;
 import androidx.leanback.widget.OnItemViewClickedListener;
-import androidx.leanback.widget.OnItemViewSelectedListener;
 import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.Row;
 import androidx.leanback.widget.RowPresenter;
 
-import com.arieleo.webtview.room.DataAccess;
+import com.arieleo.webtview.room.AppDatabase;
 import com.arieleo.webtview.room.Drama;
 import com.arieleo.webtview.web.WebDetailActivity;
 import com.arieleo.webtview.web.WebMainActivity;
 import com.arieleo.webtview.web.WebSearchActivity;
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.drawable.GlideDrawable;
-import com.bumptech.glide.request.animation.GlideAnimation;
-import com.bumptech.glide.request.target.SimpleTarget;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -46,7 +41,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
-import java.util.TimerTask;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
@@ -170,7 +164,7 @@ public class MainFragment extends BrowseFragment {
         HeaderItem gridHeader = new HeaderItem(headerId, "切换视频源");
         GridItemPresenter mGridPresenter = new GridItemPresenter();
         ArrayObjectAdapter gridRowAdapter = new ArrayObjectAdapter(mGridPresenter);
-        for(String title : getResources().getStringArray(R.array.tv_config_titles)) {
+        for(String title : TvSource.titles) {
             if(!title.contains(TvSource.title())) {
                 gridRowAdapter.add(title);
             }
@@ -211,11 +205,12 @@ public class MainFragment extends BrowseFragment {
         for (Drama drama : dramas) {
             drama.urlHome = TvSource.urlHome();
         }
-        insertVodDisposable = DataAccess.getInstance(getActivity().getApplicationContext())
+        insertVodDisposable = AppDatabase.getInstance(getActivity().getApplicationContext())
                 .vodDao().insertVod(dramas)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
-                .subscribe(() -> Log.d(TAG, "vodDao insertVod"), Throwable::printStackTrace);
+                .subscribe(list -> Log.i(TAG, "saveToDrama: insertVod: " + list.size()),
+                        Throwable::printStackTrace);
     }
 
     private final class ItemViewClickedListener implements OnItemViewClickedListener {
@@ -237,7 +232,7 @@ public class MainFragment extends BrowseFragment {
                 getActivity().startActivity(intent, bundle);
             } else if (item instanceof String) {
                 Log.d(TAG, TvSource.title() + " switch to " + item);
-                boolean res = TvSource.setSharedPreferencesUrlHome(getActivity(), (String) item);
+                boolean res = TvSource.setSharedPreferencesTitle(getActivity(), (String) item);
                 if(res) {
                     startActivity(new Intent(getActivity(), WebMainActivity.class));
                     getActivity().finish();

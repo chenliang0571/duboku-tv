@@ -1,26 +1,7 @@
 <resources>
     <string name="app_name">倒影TV</string>
-    <string-array name="tv_config_titles">
-        <item>独播库\nduboku.com</item>
-        <item>欧乐影院\nolevod.com</item>
-        <item>唐人街影视\ntangrenjie.tv</item>
-    </string-array>
-    <string name="js_inject">
-        (function() {
-            const tag = document.createElement("script");
-            tag.setAttribute("type", "text/javascript");
-            tag.id = "js_inject";
-            tag.setAttribute("src", "https://assets/tv.js");
-            document.head.appendChild(tag);
-        })()
-    </string>
     <string name="browse_title">Videos by 倒影TV</string>
-    <string name="related_movies">Related Videos</string>
-    <string name="grid_view">Grid View</string>
-    <string name="error_fragment">Error Fragment</string>
     <!-- Error messages -->
+    <string name="config_not_found">找不到配置信息</string>
     <string name="error_not_implemented">切换失败</string>
-    <string name="error_fragment_message">An error occurred</string>
-    <string name="dismiss_error">Dismiss</string>
-    <string name="title_activity_search_result">Leanback Title</string>
 </resources>

@@ -1,54 +1,37 @@
 package com.arieleo.webtview.web;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Toast;
-
-import androidx.fragment.app.FragmentActivity;
 
 import com.arieleo.webtview.DetailsActivity;
 import com.arieleo.webtview.R;
 import com.arieleo.webtview.TvSource;
-import com.arieleo.webtview.room.DataAccess;
+import com.arieleo.webtview.room.AppDatabase;
 import com.arieleo.webtview.room.Drama;
 import com.arieleo.webtview.room.Episode;
-import com.google.gson.Gson;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
-public class WebDetailActivity extends FragmentActivity {
+public class WebDetailActivity extends WebBaseActivity {
     private static final String TAG = "WebDetailActivity-DDD";
     private Drama drama;
-    private Disposable loadHistoryDisposable;
-    @SuppressLint("SetJavaScriptEnabled")
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_web_main);
 
-        WebView webView = findViewById(R.id.web_view);
-//        webView.setWebContentsDebuggingEnabled(true);
-        webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setLoadsImagesAutomatically(false);
-        webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
-        webView.addJavascriptInterface(new WebAppInterface(this), "Android");
-        webView.setWebViewClient(new WebViewClient() {
+    @Override
+    WebViewClient getCustomWebClient() {
+        return new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                Log.d(TAG, url);
+                Log.i(TAG, "onPageFinished: " + url);
 
-                webView.evaluateJavascript(TvSource.jsLoadEpisodes(), s -> {
-                    String json = s.substring(1, s.length() - 1)
-                            .replace("\\\"", "\"");
-                    Log.d(TAG, "From JS: " + s.length() + " - " + json);
-                    gotoActivity(json);
+                webView.evaluateJavascript(TvSource.jsInject(), res -> {
+                    if (res != null && res.contains("ok")) {
+                        play(webView, TvSource.jsRunTemplate(TvSource.JScript.jsLoadEpisodes));
+                    }
                 });
             }
 
@@ -56,13 +39,55 @@ public class WebDetailActivity extends FragmentActivity {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return false;
             }
-        });
+        };
+    }
+
+    @Override
+    void processJsLoadMeta(String s) {
+
+    }
+    @Override
+    void processJsLoadEpisodes(String s) {
+        String json = s.substring(1, s.length() - 1)
+                .replace("\\\"", "\"");
+        Log.d(TAG, "From JS: " + s.length() + " - " + json);
+        Episode[] data = gson.fromJson(json, Episode[].class);
+        Log.d(TAG, "Episodes Object length: " + data.length);
+        for (Episode datum : data) {
+            datum.dramaTitle = drama.title;
+            datum.dramaUrl = drama.url;
+        }
+        Intent intent = new Intent(this, DetailsActivity.class);
+        intent.putExtra(TvSource.INTENT_EPISODES, data);
+        intent.putExtra(TvSource.INTENT_DRAMA,
+                this.getIntent().getSerializableExtra(TvSource.INTENT_DRAMA));
+        startActivity(intent);
+        finish();
+    }
+    @Override
+    void processJsSearchResults(String s) {
+
+    }
+
+    @Override
+    void processJsStart(String s) {
+
+    }
+
+    @Override
+    void processJsGetCurrentTime(String s) {
+
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
         drama = (Drama) this.getIntent().getSerializableExtra(TvSource.INTENT_DRAMA);
         webView.loadUrl(drama.url);
 
         //load history
-        loadHistoryDisposable = DataAccess.getInstance(getApplicationContext())
+        loadHistoryDisposable = AppDatabase.getInstance(getApplicationContext())
                 .vodDao()
                 .loadHistoryByDrama(drama.url)
                 .subscribeOn(Schedulers.io())
@@ -73,35 +98,6 @@ public class WebDetailActivity extends FragmentActivity {
                         drama.tag += ("\n" + history.get(i).title + " - " + history.get(i).upd
                                 + " | " + history.get(i).currentTime);
                     }
-                }, Throwable::printStackTrace);
-    }
-
-    @Override
-    protected void onStop() {
-        Log.d(TAG, "onStop");
-        if(loadHistoryDisposable != null && !loadHistoryDisposable.isDisposed()) {
-            loadHistoryDisposable.dispose();
-        }
-        super.onStop();
-    }
-
-    private void gotoActivity(String s) {
-        try {
-            Gson gson = new Gson();
-            Episode[] data = gson.fromJson(s, Episode[].class);
-            Log.d(TAG, "Episodes Object length: " + data.length);
-            for (Episode datum : data) {
-                datum.dramaTitle = drama.title;
-                datum.dramaUrl = drama.url;
-            }
-            Intent intent = new Intent(this, DetailsActivity.class);
-            intent.putExtra(TvSource.INTENT_EPISODES, data);
-            intent.putExtra(TvSource.INTENT_DRAMA,
-                    this.getIntent().getSerializableExtra(TvSource.INTENT_DRAMA));
-            startActivity(intent);
-        } catch (Exception e) {
-            Toast.makeText(this, "ERROR:" + e.getMessage(), Toast.LENGTH_LONG).show();
-            e.printStackTrace();
-        }
+                }, error -> Log.e(TAG, "onCreate: initialize", error));
     }
 }

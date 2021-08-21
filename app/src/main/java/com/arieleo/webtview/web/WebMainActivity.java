@@ -1,58 +1,34 @@
 package com.arieleo.webtview.web;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.ProgressBar;
-import android.widget.Toast;
-
-import androidx.fragment.app.FragmentActivity;
 
 import com.arieleo.webtview.MainActivity;
 import com.arieleo.webtview.R;
 import com.arieleo.webtview.TvSource;
-import com.arieleo.webtview.room.DataAccess;
+import com.arieleo.webtview.room.AppDatabase;
 import com.arieleo.webtview.room.Drama;
-import com.google.gson.Gson;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
 
-public class WebMainActivity extends FragmentActivity {
-    private static final String TAG = "WebActivity-DDD";
+public class WebMainActivity extends WebBaseActivity {
+    private static final String TAG = "WebMainActivity-DDD";
     private Drama[] recent;
-    private Disposable findRecentDisposable;
 
-    @SuppressLint("SetJavaScriptEnabled")
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_web_main);
-
-        TvSource.initialize(this);
-        Log.d(TAG, "TvSource.urlHome: " + TvSource.urlHome());
-
-        WebView webView = findViewById(R.id.web_view);
-//        webView.setWebContentsDebuggingEnabled(true);
-        webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
-        webView.getSettings().setLoadsImagesAutomatically(false);
-        webView.addJavascriptInterface(new WebAppInterface(this), "Android");
-        webView.setWebViewClient(new WebViewClient() {
+    WebViewClient getCustomWebClient() {
+        return new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                Log.d(TAG, url);
-                webView.evaluateJavascript(TvSource.jsLoadMeta(), s -> {
-                    String json = s.substring(1, s.length() - 1)
-                            .replace("\\\"", "\"");
-                    Log.d(TAG, "From JS: " + s.length() + " - " + json);
-                    gotoActivity(json);
+                Log.i(TAG, "onPageFinished: " + url);
+                webView.evaluateJavascript(TvSource.jsInject(), res -> {
+                    if (res != null && res.contains("ok")) {
+                        play(webView, TvSource.jsRunTemplate(TvSource.JScript.jsLoadMeta));
+                    }
                 });
             }
 
@@ -60,46 +36,66 @@ public class WebMainActivity extends FragmentActivity {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return false;
             }
-        });
-        webView.loadUrl(TvSource.urlHome());
-
-        findRecentDisposable = DataAccess.getInstance(getApplicationContext())
-                .vodDao().findRecent(TvSource.urlHome())
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe((dramas) -> {
-                            Log.d(TAG, "vodDao: findRecent " + dramas.size());
-                            for (int i = 0; i < dramas.size(); i++) {
-                                dramas.get(i).category = "recent";
-                            }
-                            recent = dramas.toArray(new Drama[0]);
-                        },
-                        Throwable::printStackTrace);
+        };
     }
 
     @Override
-    protected void onStop() {
-        Log.d(TAG, "onStop");
-        if(findRecentDisposable != null && !findRecentDisposable.isDisposed()) {
-            findRecentDisposable.dispose();
+    void processJsLoadMeta(String s) {
+        String json = s.substring(1, s.length() - 1)
+                .replace("\\\"", "\"");
+        Drama[] data = gson.fromJson(json, Drama[].class);
+        Log.i(TAG, "processJsLoadMeta: Dramas " + data.length);
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra(TvSource.INTENT_DRAMAS, data);
+        if (recent != null && recent.length > 0) {
+            intent.putExtra(TvSource.INTENT_RECENT, recent);
         }
-        super.onStop();
+        startActivity(intent);
+        finish();
     }
 
-    private void gotoActivity(String s) {
-        try {
-            Gson gson = new Gson();
-            Drama[] data = gson.fromJson(s, Drama[].class);
-            Log.d(TAG, "Dramas Object length: " + data.length);
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.putExtra(TvSource.INTENT_DRAMAS, data);
-            if(recent != null && recent.length > 0) {
-                intent.putExtra(TvSource.INTENT_RECENT, recent);
-            }
-            startActivity(intent);
-        } catch (Exception e) {
-            Toast.makeText(this, "ERROR:" + e.getMessage(), Toast.LENGTH_LONG).show();
-            e.printStackTrace();
-        }
+    @Override
+    void processJsLoadEpisodes(String str) {
+
+    }
+
+    @Override
+    void processJsSearchResults(String str) {
+
+    }
+
+    @Override
+    void processJsStart(String s) {
+
+    }
+
+    @Override
+    void processJsGetCurrentTime(String s) {
+
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        findRecentDisposable = TvSource.initialize(this)
+                .flatMap(title -> {
+                    if (title.length() > 0) {
+                        Log.d(TAG, "TvSource.title: " + TvSource.title());
+                        return AppDatabase.getInstance(getApplicationContext())
+                                .vodDao().findRecent(TvSource.urlHome());
+                    } else {
+                        throw new Exception(getString(R.string.config_not_found));
+                    }
+                })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(dramas -> {
+                    webView.loadUrl(TvSource.urlHome());
+                    Log.d(TAG, "vodDao: findRecent " + dramas.size());
+                    for (int i = 0; i < dramas.size(); i++) {
+                        dramas.get(i).category = "recent";
+                    }
+                    recent = dramas.toArray(new Drama[0]);
+                }, error -> Log.e(TAG, "onCreate: initialize", error));
     }
 }
