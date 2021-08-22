@@ -8,7 +8,6 @@ import androidx.room.Query;
 import java.util.List;
 
 import io.reactivex.Completable;
-import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
 
@@ -25,8 +24,8 @@ public interface VodDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     Single<List<Long>> insertTvConfig(TvConfig... config);
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    Single<Long> insertTvConfig(TvConfig config);
+    @Query("DELETE FROM tv_config")
+    Single<Integer> deleteAllTvConfig();
 
     @Query("UPDATE history SET upd= :upd WHERE url =:url")
     Single<Integer> updateUpd(String url, String upd);

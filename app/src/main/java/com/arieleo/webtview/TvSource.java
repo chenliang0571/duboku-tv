@@ -104,12 +104,15 @@ public final class TvSource {
     }
 
     public static Single<List<TvConfig>> updateConfig(Context context) {
-        return http(context)
+        return AppDatabase.getInstance(context.getApplicationContext())
+                .vodDao().deleteAllTvConfig()
                 .subscribeOn(Schedulers.io())
+                .flatMap(num -> http(context))
                 .observeOn(AndroidSchedulers.mainThread());
     }
 
     public static Single<String> initialize(Context context) {
+        titles.clear();
         VodDao dao = AppDatabase.getInstance(context.getApplicationContext()).vodDao();
         return dao.getConfigCount()
                 .subscribeOn(Schedulers.io())
