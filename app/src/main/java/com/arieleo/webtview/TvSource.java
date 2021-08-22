@@ -3,12 +3,15 @@ package com.arieleo.webtview;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.arieleo.webtview.room.AppDatabase;
 import com.arieleo.webtview.room.TvConfig;
 import com.arieleo.webtview.room.VodDao;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -32,16 +35,20 @@ public final class TvSource {
     public static final String INTENT_RECENT = "recent";
     private static final Pattern NOT_ALLOWED_JS_FUNC = Pattern
             .compile("\\beval\\s*\\(|\\bsetTimeout\\s*\\(|\\bsetInterval\\s*\\(|\\bcreateElement\\s*\\(");
-    private static final TvDataService dataService;
+    private static TvDataService dataService;
     private static TvConfig config;
     public static final List<String> titles = new ArrayList<>();
-    static {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://lzj8csjmyd.execute-api.eu-west-2.amazonaws.com")
-                .addConverterFactory(GsonConverterFactory.create())
-                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-                .build();
-        dataService = retrofit.create(TvDataService.class);
+
+    private synchronized static TvDataService getDataService(Context context) {
+        if(dataService == null) {
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl(context.getString(R.string.api_url))
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+                    .build();
+            dataService = retrofit.create(TvDataService.class);
+        }
+        return dataService;
     }
 
     public static boolean setSharedPreferencesTitle(Context context, String title) {
@@ -67,26 +74,39 @@ public final class TvSource {
 
     public static Single<List<TvConfig>> http(Context context) {
         VodDao dao = AppDatabase.getInstance(context.getApplicationContext()).vodDao();
-        return dataService.getConfig()
+        return getDataService(context).getConfig()
+                .onErrorResumeNext(error -> {
+                    Log.e(TAG, "http: onErrorResumeNext", error);
+                    InputStream is = context.getAssets().open("data.json");
+                    int size = is.available();
+                    byte[] buffer = new byte[size];
+                    is.read(buffer);
+                    is.close();
+                    String json = new String(buffer, StandardCharsets.UTF_8);
+                    Log.d(TAG, "http: asset " + json);
+                    Gson gson = new Gson();
+                    return  Single.just(gson.fromJson(json, new TypeToken<List<TvConfig>>(){}.getType()));
+                })
                 .flatMap(list -> {
                     ArrayList<TvConfig> cc = new ArrayList<>();
-//                    String error = "检测到不可用字符，无效的配置信息";
                     for(TvConfig c : list) {
                         Matcher matcher = NOT_ALLOWED_JS_FUNC.matcher(c.toString());
                         if(matcher.matches()) {
-//                            error += " " + c.title;
                             Log.w(TAG, "initialize: NOT_ALLOWED_JS_FUNC " + c.toString());
                         } else {
                             Log.w(TAG, "initialize: getConfig OK " + c.title);
                             cc.add(c);
                         }
                     }
-//                    if(cc.size() != list.size()) {
-//                        Toast.makeText(context, error, Toast.LENGTH_LONG).show();
-//                    }
                     return dao.insertTvConfig(cc.toArray(new TvConfig[0]));
                 })
                 .flatMap(longs -> dao.getConfig());
+    }
+
+    public static Single<List<TvConfig>> updateConfig(Context context) {
+        return http(context)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread());
     }
 
     public static Single<String> initialize(Context context) {
@@ -103,7 +123,7 @@ public final class TvSource {
                     }
                 })
                 .flatMap(list -> {
-                    if (list != null && list.size() > 0) {
+                    if (list.size() > 0) {
                         String current = getSharedPreferencesTitle(context);
                         for (TvConfig c : list) {
                             Log.i(TAG, "initialize: config.put => " + c.title);
@@ -177,17 +197,16 @@ public final class TvSource {
     }
 
     public enum JScript {
-        jsInject,
         jsLoadMeta,
         jsLoadEpisodes,
         jsSearchResults,
         jsStart,
-        jsClearTag,
-        jsVideoCMD,
+//        jsInject,
+//        jsClearTag,
+//        jsVideoCMD,
     }
-    //https://lzj8csjmyd.execute-api.eu-west-2.amazonaws.com/default/tv
     public interface TvDataService {
-        @GET("default/tv")
+        @GET("chenliang0571/duboku-tv/main/config.json")
         Single<List<TvConfig>> getConfig();
     }
 }

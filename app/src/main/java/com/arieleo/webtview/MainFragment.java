@@ -2,9 +2,7 @@ package com.arieleo.webtview;
 
 import android.content.Intent;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
@@ -40,7 +38,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
@@ -49,19 +46,12 @@ import io.reactivex.schedulers.Schedulers;
 public class MainFragment extends BrowseFragment {
     private static final String TAG = "MainFragment-DDDD";
 
-    private static final int BACKGROUND_UPDATE_DELAY = 300;
     private static final int GRID_ITEM_WIDTH = 200;
     private static final int GRID_ITEM_HEIGHT = 200;
 
-    private final Handler mHandler = new Handler();
-    private Drawable mDefaultBackground;
-    private DisplayMetrics mMetrics;
-    private Timer mBackgroundTimer;
-    private String mBackgroundUri;
-    private BackgroundManager mBackgroundManager;
-
     private Drama[] dramas;
     private Disposable insertVodDisposable;
+    private Disposable updateConfigDisposable;
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
@@ -69,10 +59,9 @@ public class MainFragment extends BrowseFragment {
         super.onActivityCreated(savedInstanceState);
 
         //////////////prepareBackgroundManager/////////
-        mBackgroundManager = BackgroundManager.getInstance(getActivity());
+        BackgroundManager mBackgroundManager = BackgroundManager.getInstance(getActivity());
         mBackgroundManager.attach(getActivity().getWindow());
-        mDefaultBackground = ContextCompat.getDrawable(getActivity(), R.drawable.default_background);
-        mMetrics = new DisplayMetrics();
+        DisplayMetrics mMetrics = new DisplayMetrics();
         getActivity().getWindowManager().getDefaultDisplay().getMetrics(mMetrics);
 
         //////////////setupUIElements///////////
@@ -106,12 +95,11 @@ public class MainFragment extends BrowseFragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (null != mBackgroundTimer) {
-            Log.d(TAG, "onDestroy: " + mBackgroundTimer.toString());
-            mBackgroundTimer.cancel();
-        }
         if(insertVodDisposable != null && !insertVodDisposable.isDisposed()) {
             insertVodDisposable.dispose();
+        }
+        if(updateConfigDisposable != null && !updateConfigDisposable.isDisposed()) {
+            updateConfigDisposable.dispose();
         }
     }
     @Override
@@ -161,7 +149,7 @@ public class MainFragment extends BrowseFragment {
             rowsAdapter.add(new ListRow(header, listRowAdapter));
         }
 
-        HeaderItem gridHeader = new HeaderItem(headerId, "切换视频源");
+        HeaderItem gridHeader = new HeaderItem(headerId++, getString(R.string.switch_source));
         GridItemPresenter mGridPresenter = new GridItemPresenter();
         ArrayObjectAdapter gridRowAdapter = new ArrayObjectAdapter(mGridPresenter);
         for(String title : TvSource.titles) {
@@ -170,6 +158,12 @@ public class MainFragment extends BrowseFragment {
             }
         }
         rowsAdapter.add(new ListRow(gridHeader, gridRowAdapter));
+
+        HeaderItem settingHeader = new HeaderItem(headerId, getString(R.string.settings));
+        ArrayObjectAdapter settingRowAdapter = new ArrayObjectAdapter(new GridItemPresenter());
+        settingRowAdapter.add(getString(R.string.settings_sync));
+        settingRowAdapter.add(getString(R.string.settings_version));
+        rowsAdapter.add(new ListRow(settingHeader, settingRowAdapter));
 
         try {
             setAdapter(rowsAdapter);
@@ -231,13 +225,30 @@ public class MainFragment extends BrowseFragment {
                         .toBundle();
                 getActivity().startActivity(intent, bundle);
             } else if (item instanceof String) {
-                Log.d(TAG, TvSource.title() + " switch to " + item);
-                boolean res = TvSource.setSharedPreferencesTitle(getActivity(), (String) item);
-                if(res) {
-                    startActivity(new Intent(getActivity(), WebMainActivity.class));
-                    getActivity().finish();
+                if(item.equals(getString(R.string.settings_sync))) {
+                    Log.i(TAG, "onItemClicked: settings_sync");
+                    updateConfigDisposable = TvSource.updateConfig(getActivity()).subscribe(list -> {
+                        Toast.makeText(getActivity(), String.format(
+                                getString(R.string.settings_sync_message), list.size())
+                                , Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(getActivity(), WebMainActivity.class));
+                        getActivity().finish();
+                    }, error -> {
+                        Log.e(TAG, "onItemClicked: settings_sync", error);
+                        Toast.makeText(getActivity(), getString(R.string.error_not_implemented)
+                                + ": " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
+                } else if(item.equals(getString(R.string.settings_version))) {
+                    Log.i(TAG, "onItemClicked: settings_version");
                 } else {
-                    Toast.makeText(getActivity(), getString(R.string.error_not_implemented), Toast.LENGTH_SHORT).show();
+                    Log.i(TAG, "onItemClicked: " + TvSource.title() + " switch to " + item);
+                    boolean res = TvSource.setSharedPreferencesTitle(getActivity(), (String) item);
+                    if(res) {
+                        startActivity(new Intent(getActivity(), WebMainActivity.class));
+                        getActivity().finish();
+                    } else {
+                        Toast.makeText(getActivity(), getString(R.string.error_not_implemented), Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
         }
