@@ -3,6 +3,7 @@ package com.arieleo.webtview.web;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Pair;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
@@ -12,12 +13,14 @@ import com.arieleo.webtview.TvSource;
 import com.arieleo.webtview.room.AppDatabase;
 import com.arieleo.webtview.room.Drama;
 
+import java.util.List;
+
+import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
 public class WebMainActivity extends WebBaseActivity {
     private static final String TAG = "WebMainActivity-DDD";
-    private Drama[] recent;
 
     @Override
     WebViewClient getCustomWebClient() {
@@ -46,28 +49,32 @@ public class WebMainActivity extends WebBaseActivity {
 
         jsLoadMetaDisposable = TvSource.getScriptResultSubject()
                 .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
                 .filter(pair -> pair.first.equals(TvSource.JScript.jsLoadMeta.name()))
-                .subscribe(pair -> {
+                .flatMapSingle(pair -> {
                     Drama[] data = (Drama[]) pair.second;
+                    for (Drama drama : data) {
+                        drama.urlHome = TvSource.urlHome();
+                    }
+                    return AppDatabase.getInstance(getApplicationContext())
+                            .vodDao().insertVod(data).map(num -> new Pair<List, Pair>(num, pair));
+                })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(pair -> {
+                    Drama[] data = (Drama[]) pair.second.second;
                     Log.i(TAG, "onCreate: jsLoadMeta: "
                             + TvSource.JScript.jsLoadMeta.name()
-                            + " " + data.length);
+                            + " " + data.length + ", insertVod size = " + pair.first.size());
                     Intent intent = new Intent(this, MainActivity.class);
                     intent.putExtra(TvSource.INTENT_DRAMAS, data);
-                    if (recent != null && recent.length > 0) {
-                        intent.putExtra(TvSource.INTENT_RECENT, recent);
-                    }
                     startActivity(intent);
                     finish();
                 } );
 
-        findRecentDisposable = TvSource.initialize(this)
+        initializeDisposable =  TvSource.initialize(this)
                 .flatMap(title -> {
                     if (title.length() > 0) {
                         Log.d(TAG, "TvSource.title: " + TvSource.title());
-                        return AppDatabase.getInstance(getApplicationContext())
-                                .vodDao().findRecent(TvSource.urlHome());
+                        return Single.just(TvSource.title());
                     } else {
                         throw new Exception(getString(R.string.config_not_found));
                     }
@@ -75,11 +82,6 @@ public class WebMainActivity extends WebBaseActivity {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(recent -> {
                     webView.loadUrl(TvSource.urlHome());
-                    Log.d(TAG, "vodDao: findRecent " + recent.size());
-                    for (int i = 0; i < recent.size(); i++) {
-                        recent.get(i).category = "recent";
-                    }
-                    this.recent = recent.toArray(new Drama[0]);
                 }, error -> Log.e(TAG, "onCreate: initialize", error));
     }
 }

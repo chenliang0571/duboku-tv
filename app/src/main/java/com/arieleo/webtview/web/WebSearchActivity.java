@@ -5,13 +5,17 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Pair;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import com.arieleo.webtview.TvSource;
+import com.arieleo.webtview.room.AppDatabase;
 import com.arieleo.webtview.room.Drama;
+
+import java.util.List;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
@@ -45,13 +49,21 @@ public class WebSearchActivity extends WebBaseActivity {
 
         jsSearchResultsDisposable = TvSource.getScriptResultSubject()
                 .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
                 .filter(pair -> pair.first.equals(TvSource.JScript.jsSearchResults.name()))
-                .subscribe(pair -> {
+                .flatMapSingle(pair -> {
                     Drama[] data = (Drama[]) pair.second;
+                    for (Drama drama : data) {
+                        drama.urlHome = TvSource.urlHome();
+                    }
+                    return AppDatabase.getInstance(getApplicationContext())
+                            .vodDao().insertVod(data).map(num -> new Pair<List, Pair>(num, pair));
+                })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(pair -> {
+                    Drama[] data = (Drama[]) pair.second.second;
                     Log.i(TAG, "onCreate: jsSearchResults: "
                             + TvSource.JScript.jsSearchResults.name()
-                            + " " + data.length);
+                            + " " + data.length + ", insertVod size = " + pair.first.size());
                     Intent intent = new Intent();
                     intent.putExtra(TvSource.INTENT_SEARCH, data);
                     setResult(Activity.RESULT_OK, intent);

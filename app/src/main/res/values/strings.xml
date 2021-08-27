@@ -4,7 +4,7 @@
     <string name="switch_source">切换视频源</string>
     <string name="settings">设置</string>
     <string name="settings_sync">更新视频源</string>
-    <string name="settings_version">v2.0.1</string>
+    <string name="settings_version">v2.0.5</string>
     <string name="settings_sync_message">成功获取%d个视频源</string>
     <string name="api_url">https://raw.githubusercontent.com/</string>
     <!-- Error messages -->

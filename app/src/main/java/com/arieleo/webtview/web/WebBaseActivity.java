@@ -31,7 +31,7 @@ public abstract class WebBaseActivity extends FragmentActivity {
     protected WebView webView;
     protected VodDao dao;
     protected Disposable loadHistoryDisposable;
-    protected Disposable findRecentDisposable;
+    protected Disposable initializeDisposable;
     protected Disposable loadHistoryByIdDisposable;
     protected Disposable updateCurrentTimeDisposable;
     protected Disposable jsLoadMetaDisposable;
@@ -69,7 +69,7 @@ public abstract class WebBaseActivity extends FragmentActivity {
         handler.removeCallbacksAndMessages(null);
         for(Disposable disposable : new Disposable[] {
                 loadHistoryDisposable, 
-                findRecentDisposable, 
+                initializeDisposable,
                 loadHistoryByIdDisposable,
                 updateCurrentTimeDisposable,
                 jsLoadMetaDisposable,
@@ -105,19 +105,6 @@ public abstract class WebBaseActivity extends FragmentActivity {
                 } else if (s != null && s.contains("-error-")) {
                     Toast.makeText(this, "ERROR:" + s, Toast.LENGTH_LONG).show();
                 }
-//                else if (TvSource.jsRunTemplate(TvSource.JScript.jsStart).equals(script)
-//                        && s.contains("jsStart-video-started-")) {
-//                    processJsStart(s);
-//                } else if (s.contains("jsVideoCMD-get_current_time-")) {
-//                    processJsGetCurrentTime(s);
-//                    handler.postDelayed(() -> play(webView, script), 30000);
-//                } else if (TvSource.jsRunTemplate(TvSource.JScript.jsLoadMeta).equals(script)) {
-//                    processJsLoadMeta(s);
-//                } else if (TvSource.jsRunTemplate(TvSource.JScript.jsLoadEpisodes).equals(script)) {
-//                    processJsLoadEpisodes(s);
-//                } else if (TvSource.jsRunTemplate(TvSource.JScript.jsSearchResults).equals(script)) {
-//                    processJsSearchResults(s);
-//                }
             });
         } catch (Exception e) {
             showToast("ERROR:" + e.getMessage());

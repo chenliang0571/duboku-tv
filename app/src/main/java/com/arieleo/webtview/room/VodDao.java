@@ -8,6 +8,7 @@ import androidx.room.Query;
 import java.util.List;
 
 import io.reactivex.Completable;
+import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
 
@@ -44,7 +45,7 @@ public interface VodDao {
             "FROM dramas inner join history on dramas.url = history.drama_url " +
             "WHERE dramas.url_home = :urlHome " +
             "group by dramas.url order by history.upd desc limit 50")
-    Single<List<Drama>> findRecent(String urlHome);
+    Flowable<List<Drama>> findRecent(String urlHome);
 
     @Query("SELECT count(*) from tv_config")
     Single<Integer> getConfigCount();

@@ -50,8 +50,8 @@ public class MainFragment extends BrowseFragment {
     private static final int GRID_ITEM_HEIGHT = 200;
 
     private Drama[] dramas;
-    private Disposable insertVodDisposable;
     private Disposable updateConfigDisposable;
+    private Disposable findRecentDisposable;
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
@@ -78,28 +78,33 @@ public class MainFragment extends BrowseFragment {
         ///////////////setupEventListeners/////////////
         setOnSearchClickedListener(view -> search());
         setOnItemViewClickedListener(new ItemViewClickedListener());
-//        setOnItemViewSelectedListener(new ItemViewSelectedListener());
+
+        findRecentDisposable = AppDatabase.getInstance(getActivity().getApplicationContext())
+                .vodDao().findRecent(TvSource.urlHome())
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(list -> {
+                            for (Drama d : list) d.category = "recent";
+                            Log.i(TAG, "onActivityCreated: findRecent " + list);
+                            updateRows(list.toArray(new Drama[0]));
+                            loadRows();
+                        },
+                        error -> Log.e(TAG, "onActivityCreated: findRecent error", error));
 
         dramas = (Drama[]) getActivity().getIntent().getSerializableExtra(TvSource.INTENT_DRAMAS);
         if (dramas != null && dramas.length > 0) {
-            Serializable recent = getActivity().getIntent().getSerializableExtra(TvSource.INTENT_RECENT);
-            if(recent != null) {
-                updateRows((Drama[]) recent);
-            }
-
             loadRows();
-            saveToDrama(dramas);
             Log.d(TAG, "onActivityCreated: " + dramas.length);
         }
     }
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if(insertVodDisposable != null && !insertVodDisposable.isDisposed()) {
-            insertVodDisposable.dispose();
-        }
         if(updateConfigDisposable != null && !updateConfigDisposable.isDisposed()) {
             updateConfigDisposable.dispose();
+        }
+        if(findRecentDisposable != null && !findRecentDisposable.isDisposed()) {
+            findRecentDisposable.dispose();
         }
     }
     @Override
@@ -110,7 +115,6 @@ public class MainFragment extends BrowseFragment {
                 Drama[] result = (Drama[]) intent.getSerializableExtra(TvSource.INTENT_SEARCH);
                 Log.d(TAG, "onActivityResult: " + result.length);
                 if(result.length > 0) {
-                    saveToDrama(result);
                     updateRows(result);
                     loadRows();
                 }
@@ -191,20 +195,7 @@ public class MainFragment extends BrowseFragment {
     }
     protected void search() {
         Intent intent = new Intent(getActivity(), WebSearchActivity.class);
-        Drama[] data = (Drama[]) getActivity().getIntent().getSerializableExtra(TvSource.INTENT_DRAMAS);
-        intent.putExtra(TvSource.INTENT_DRAMAS, data);
         startActivityForResult(intent, 123);
-    }
-    private void saveToDrama(Drama[] dramas) {
-        for (Drama drama : dramas) {
-            drama.urlHome = TvSource.urlHome();
-        }
-        insertVodDisposable = AppDatabase.getInstance(getActivity().getApplicationContext())
-                .vodDao().insertVod(dramas)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeOn(Schedulers.io())
-                .subscribe(list -> Log.i(TAG, "saveToDrama: insertVod: " + list.size()),
-                        Throwable::printStackTrace);
     }
 
     private final class ItemViewClickedListener implements OnItemViewClickedListener {
