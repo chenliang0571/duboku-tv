@@ -3,6 +3,7 @@ package com.arieleo.webtview;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
+import android.util.Pair;
 
 import com.arieleo.webtview.room.AppDatabase;
 import com.arieleo.webtview.room.TvConfig;
@@ -20,6 +21,7 @@ import java.util.regex.Pattern;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.PublishSubject;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -38,6 +40,8 @@ public final class TvSource {
     private static TvDataService dataService;
     private static TvConfig config;
     public static final List<String> titles = new ArrayList<>();
+    private static final PublishSubject<String> videoSubject =  PublishSubject.create();
+    private static final PublishSubject<Pair<String, Object>> scriptResultSubject =  PublishSubject.create();
 
     private synchronized static TvDataService getDataService(Context context) {
         if(dataService == null) {
@@ -70,6 +74,13 @@ public final class TvSource {
         String title = sharedPref.getString("HOME_TITLE", "");
         Log.i(TAG, "initialize: SharedPreferences title = " + title);
         return title;
+    }
+
+    public static PublishSubject<String> getVideoSubject() {
+        return videoSubject;
+    }
+    public static PublishSubject<Pair<String, Object>> getScriptResultSubject() {
+        return scriptResultSubject;
     }
 
     public static Single<List<TvConfig>> http(Context context) {
@@ -161,17 +172,37 @@ public final class TvSource {
         return config.urlSearch;
     }
 
+    /**
+ (function() {
+     const tag = document.createElement('script');
+     tag.setAttribute('type', 'text/javascript');
+     tag.id = 'js_inject';
+     tag.setAttribute('src', 'https://assets/tv.js');
+     document.head.appendChild(tag);
+     %s
+     %s
+     %s
+     %s
+     %s
+     return 'ok';
+ })()
+     * @return 成功返回ok
+     */
     public static String jsInject() {
         return String.format(
                 "(function() {\n" +
-                        "    const tag = document.createElement(\"script\");\n" +
-                        "    tag.setAttribute(\"type\", \"text/javascript\");\n" +
-                        "    tag.id = \"js_inject\";\n" +
-                        "    tag.setAttribute(\"src\", \"https://assets/tv.js\");\n" +
-                        "    document.head.appendChild(tag);\n" +
-                        "    %s\n%s\n%s\n%s\n%s\n" +
-                        "    return \"ok\";\n" +
-                        "})()",
+                "    const tag = document.createElement('script');\n" +
+                "    tag.setAttribute('type', 'text/javascript');\n" +
+                "    tag.id = 'js_inject';\n" +
+                "    tag.setAttribute('src', 'https://assets/tv.js');\n" +
+                "    document.head.appendChild(tag);\n" +
+                "     %s\n" +
+                "     %s\n" +
+                "     %s\n" +
+                "     %s\n" +
+                "     %s\n" +
+                "    return 'ok';\n" +
+                "})()",
                 config.jsGetVideoIframe,
                 config.jsClearTag,
                 config.jsLoadMeta,
@@ -179,26 +210,97 @@ public final class TvSource {
                 config.jsSearchResults);
     }
 
+    /**
+     * 参数
+     *         jsLoadMeta,
+     *         jsLoadEpisodes,
+     *         jsSearchResults,
+     *         jsStart,
+ (function () {
+     if (typeof window.%s === 'function') {
+         try {
+             const data = window.%s();
+             Android.sendData('%s', data);
+             return 'ok';
+         } catch (error) {
+             return '%s-error-' + error;
+         }
+     } else {
+        return '%s-func-not-found';
+     }
+ })()
+     * @param js JScript
+     * @return 返回ok，-error-或func-not-found，数据发送到Android.sendData
+     */
     public static String jsRunTemplate(JScript js) {
-        return "(function () {\n" +
-                "    if (typeof window." + js.name() + " === \"function\") {\n" +
-                "        return window." + js.name() + "();\n" +
-                "    } else {\n" +
-                "        return \"" + js.name() + "-func-not-found\";\n" +
-                "    }\n" +
-                "})()";
+        return  String.format(
+                " (function () {\n" +
+                "     if (typeof window.%s === 'function') {\n" +
+                "         try {\n" +
+                "             const data = window.%s();\n" +
+                "             Android.sendData('%s', data);\n" +
+                "             return 'ok';  \n" +
+                "         } catch (error) {\n" +
+                "             return '%s-error-' + error;\n" +
+                "         }\n" +
+                "     } else {\n" +
+                "        return '%s-func-not-found';\n" +
+                "     }\n" +
+                " })()", js.name(), js.name(), js.name(), js.name(), js.name()
+        );
     }
 
-    public static String jsVideoCmdTemplate(String cmd, String param) {
-        return "(function () {\n" +
-                "    if (typeof window.jsVideoCMD === \"function\") {\n" +
-                "        return window.jsVideoCMD(\"" + cmd + "\", \"" + param + "\");\n" +
-                "    } else {\n" +
-                "        return \"func-not-found\";\n" +
-                "    }\n" +
-                "})()";
+    /**
+     * 参数
+     *         play,
+     *         pause,
+     *         forward,
+     *         backward,
+     *         get_current_time,
+     *         set_current_time
+ (function () {
+     if (typeof window.jsVideoCMD === 'function') {
+         try {
+             const data = window.jsVideoCMD('%s', '%s');
+             Android.sendData('%s', data);
+             return 'ok';
+         } catch (error) {
+             return '%s-error-' + error;
+         }
+     } else {
+        return '%s-func-not-found';
+     }
+ })()
+     * @param cmd JScmd
+     * @param param 只有set_current_time有参数
+     * @return 返回ok，-error-或func-not-found，数据发送到Android.sendData
+     */
+    public static String jsVideoCmdTemplate(JScmd cmd, String param) {
+        return String.format(
+                " (function () {\n" +
+                "     if (typeof window.jsVideoCMD === 'function') {\n" +
+                "         try {\n" +
+                "             const data = window.jsVideoCMD('%s', '%s');\n" +
+                "             Android.sendData('%s', data);\n" +
+                "             return 'ok';\n" +
+                "         } catch (error) {\n" +
+                "             return '%s-error-' + error;\n" +
+                "         }\n" +
+                "     } else {\n" +
+                "        return '%s-func-not-found';\n" +
+                "     }\n" +
+                " })()", cmd.name(), param, cmd.name(), cmd.name(), cmd.name()
+        );
     }
 
+    public enum JScmd {
+        play,
+        pause,
+        forward,
+        backward,
+        get_current_time,
+        set_current_time
+    }
     public enum JScript {
         jsLoadMeta,
         jsLoadEpisodes,

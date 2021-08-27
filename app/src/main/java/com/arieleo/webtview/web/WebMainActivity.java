@@ -13,6 +13,7 @@ import com.arieleo.webtview.room.AppDatabase;
 import com.arieleo.webtview.room.Drama;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
 
 public class WebMainActivity extends WebBaseActivity {
     private static final String TAG = "WebMainActivity-DDD";
@@ -40,43 +41,26 @@ public class WebMainActivity extends WebBaseActivity {
     }
 
     @Override
-    void processJsLoadMeta(String s) {
-        String json = s.substring(1, s.length() - 1)
-                .replace("\\\"", "\"");
-        Drama[] data = gson.fromJson(json, Drama[].class);
-        Log.i(TAG, "processJsLoadMeta: Dramas " + data.length);
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.putExtra(TvSource.INTENT_DRAMAS, data);
-        if (recent != null && recent.length > 0) {
-            intent.putExtra(TvSource.INTENT_RECENT, recent);
-        }
-        startActivity(intent);
-        finish();
-    }
-
-    @Override
-    void processJsLoadEpisodes(String str) {
-
-    }
-
-    @Override
-    void processJsSearchResults(String str) {
-
-    }
-
-    @Override
-    void processJsStart(String s) {
-
-    }
-
-    @Override
-    void processJsGetCurrentTime(String s) {
-
-    }
-
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        jsLoadMetaDisposable = TvSource.getScriptResultSubject()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .filter(pair -> pair.first.equals(TvSource.JScript.jsLoadMeta.name()))
+                .subscribe(pair -> {
+                    Drama[] data = (Drama[]) pair.second;
+                    Log.i(TAG, "onCreate: jsLoadMeta: "
+                            + TvSource.JScript.jsLoadMeta.name()
+                            + " " + data.length);
+                    Intent intent = new Intent(this, MainActivity.class);
+                    intent.putExtra(TvSource.INTENT_DRAMAS, data);
+                    if (recent != null && recent.length > 0) {
+                        intent.putExtra(TvSource.INTENT_RECENT, recent);
+                    }
+                    startActivity(intent);
+                    finish();
+                } );
 
         findRecentDisposable = TvSource.initialize(this)
                 .flatMap(title -> {
@@ -89,13 +73,13 @@ public class WebMainActivity extends WebBaseActivity {
                     }
                 })
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(dramas -> {
+                .subscribe(recent -> {
                     webView.loadUrl(TvSource.urlHome());
-                    Log.d(TAG, "vodDao: findRecent " + dramas.size());
-                    for (int i = 0; i < dramas.size(); i++) {
-                        dramas.get(i).category = "recent";
+                    Log.d(TAG, "vodDao: findRecent " + recent.size());
+                    for (int i = 0; i < recent.size(); i++) {
+                        recent.get(i).category = "recent";
                     }
-                    recent = dramas.toArray(new Drama[0]);
+                    this.recent = recent.toArray(new Drama[0]);
                 }, error -> Log.e(TAG, "onCreate: initialize", error));
     }
 }

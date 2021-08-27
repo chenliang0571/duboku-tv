@@ -12,7 +12,9 @@ import android.widget.Toast;
 
 import com.arieleo.webtview.TvSource;
 import com.arieleo.webtview.room.Drama;
-import com.google.gson.Gson;
+
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
 
 public class WebSearchActivity extends WebBaseActivity {
     private static final String TAG = "WebSearchActivity-DDD";
@@ -38,41 +40,23 @@ public class WebSearchActivity extends WebBaseActivity {
     }
 
     @Override
-    void processJsLoadMeta(String s) {
-
-    }
-
-    @Override
-    void processJsLoadEpisodes(String s) {
-
-    }
-
-    @Override
-    void processJsSearchResults(String s) {
-        String json = s.substring(1, s.length() - 1)
-                .replace("\\\"", "\"");
-        Log.d(TAG, "From JS: " + s.length() + " - " + json);
-        Intent intent = new Intent();
-        Gson gson = new Gson();
-        Drama[] data = gson.fromJson(json, Drama[].class);
-        intent.putExtra(TvSource.INTENT_SEARCH, data);
-        setResult(Activity.RESULT_OK, intent);
-        finish();
-    }
-
-    @Override
-    void processJsStart(String s) {
-
-    }
-
-    @Override
-    void processJsGetCurrentTime(String s) {
-
-    }
-
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        jsSearchResultsDisposable = TvSource.getScriptResultSubject()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .filter(pair -> pair.first.equals(TvSource.JScript.jsSearchResults.name()))
+                .subscribe(pair -> {
+                    Drama[] data = (Drama[]) pair.second;
+                    Log.i(TAG, "onCreate: jsSearchResults: "
+                            + TvSource.JScript.jsSearchResults.name()
+                            + " " + data.length);
+                    Intent intent = new Intent();
+                    intent.putExtra(TvSource.INTENT_SEARCH, data);
+                    setResult(Activity.RESULT_OK, intent);
+                    finish();
+                } );
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final EditText text = new EditText(this);

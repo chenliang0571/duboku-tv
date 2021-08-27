@@ -7,7 +7,6 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import com.arieleo.webtview.DetailsActivity;
-import com.arieleo.webtview.R;
 import com.arieleo.webtview.TvSource;
 import com.arieleo.webtview.room.AppDatabase;
 import com.arieleo.webtview.room.Drama;
@@ -43,49 +42,32 @@ public class WebDetailActivity extends WebBaseActivity {
     }
 
     @Override
-    void processJsLoadMeta(String s) {
-
-    }
-    @Override
-    void processJsLoadEpisodes(String s) {
-        String json = s.substring(1, s.length() - 1)
-                .replace("\\\"", "\"");
-        Log.d(TAG, "From JS: " + s.length() + " - " + json);
-        Episode[] data = gson.fromJson(json, Episode[].class);
-        Log.d(TAG, "Episodes Object length: " + data.length);
-        for (Episode datum : data) {
-            datum.dramaTitle = drama.title;
-            datum.dramaUrl = drama.url;
-        }
-        Intent intent = new Intent(this, DetailsActivity.class);
-        intent.putExtra(TvSource.INTENT_EPISODES, data);
-        intent.putExtra(TvSource.INTENT_DRAMA,
-                this.getIntent().getSerializableExtra(TvSource.INTENT_DRAMA));
-        startActivity(intent);
-        finish();
-    }
-    @Override
-    void processJsSearchResults(String s) {
-
-    }
-
-    @Override
-    void processJsStart(String s) {
-
-    }
-
-    @Override
-    void processJsGetCurrentTime(String s) {
-
-    }
-
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         drama = (Drama) this.getIntent().getSerializableExtra(TvSource.INTENT_DRAMA);
         webView.loadUrl(drama.url);
 
+        jsLoadEpisodesDisposable = TvSource.getScriptResultSubject()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .filter(pair -> pair.first.equals(TvSource.JScript.jsLoadEpisodes.name()))
+                .subscribe(pair -> {
+                    Episode[] data = (Episode[]) pair.second;
+                    Log.i(TAG, "onCreate: jsLoadEpisodes: "
+                            + TvSource.JScript.jsLoadEpisodes.name()
+                            + " " + data.length);
+                    for (Episode datum : data) {
+                        datum.dramaTitle = drama.title;
+                        datum.dramaUrl = drama.url;
+                    }
+                    Intent intent = new Intent(this, DetailsActivity.class);
+                    intent.putExtra(TvSource.INTENT_EPISODES, data);
+                    intent.putExtra(TvSource.INTENT_DRAMA,
+                            this.getIntent().getSerializableExtra(TvSource.INTENT_DRAMA));
+                    startActivity(intent);
+                    finish();
+                } );
         //load history
         loadHistoryDisposable = AppDatabase.getInstance(getApplicationContext())
                 .vodDao()

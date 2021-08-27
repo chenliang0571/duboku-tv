@@ -1,22 +1,16 @@
 package com.arieleo.webtview.web;
 
 import android.app.AlertDialog;
-import android.content.pm.ActivityInfo;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
 import android.view.KeyEvent;
-import android.view.View;
-import android.view.ViewGroup;
-import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import androidx.room.EmptyResultSetException;
@@ -26,19 +20,14 @@ import com.arieleo.webtview.room.Episode;
 
 import java.io.IOException;
 import java.net.URLConnection;
+import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Single;
+import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
 public class WebVideoActivity extends WebBaseActivity {
     private static final String TAG = "WebVideoActivity-DDD";
-    private static final int FULL_SCREEN_SETTING = View.SYSTEM_UI_FLAG_FULLSCREEN |
-            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
-            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-            View.SYSTEM_UI_FLAG_IMMERSIVE;
     private Episode episode;
     private String currentTime = null;
 
@@ -97,16 +86,16 @@ public class WebVideoActivity extends WebBaseActivity {
                     setCurrentTime(webView);
                     return true;
                 } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP) {
-                    play(webView, TvSource.jsVideoCmdTemplate("pause", "null"));
+                    play(webView, TvSource.jsVideoCmdTemplate(TvSource.JScmd.pause, "null"));
                     return true;
                 } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN) {
-                    play(webView, TvSource.jsVideoCmdTemplate("play", "null"));
+                    play(webView, TvSource.jsVideoCmdTemplate(TvSource.JScmd.play, "null"));
                     return true;
                 } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_LEFT) {
-                    play(webView, TvSource.jsVideoCmdTemplate("backward", "null"));
+                    play(webView, TvSource.jsVideoCmdTemplate(TvSource.JScmd.backward, "null"));
                     return true;
                 } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                    play(webView, TvSource.jsVideoCmdTemplate("forward", "null"));
+                    play(webView, TvSource.jsVideoCmdTemplate(TvSource.JScmd.forward, "null"));
                     return true;
                 } else {
                     return false;
@@ -116,34 +105,33 @@ public class WebVideoActivity extends WebBaseActivity {
     }
 
     @Override
-    void processJsLoadMeta(String s) {
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-    }
+        webView.setWebChromeClient(new WebVideoActivity.WebChromeClientCustom());
+        episode = (Episode) this.getIntent().getSerializableExtra("episode");
+        webView.loadUrl(episode.url);
 
-    @Override
-    void processJsLoadEpisodes(String s) {
-
-    }
-
-    @Override
-    void processJsSearchResults(String s) {
-
-    }
-
-    @Override
-    void processJsStart(String s) {
-        episode.upd = s.replace("jsStart-video-started-", "").replace("\"", "");
-        episode.urlHome = TvSource.urlHome();
-        loadHistoryByIdDisposable = dao.loadHistoryById(episode.url)
+        jsStartDisposable = TvSource.getScriptResultSubject()
                 .subscribeOn(Schedulers.io())
+                .filter(pair -> pair.first.equals(TvSource.JScript.jsStart.name()))
+                .flatMapSingle(pair -> {
+                    WebAppInterface.JsDataResult data = (WebAppInterface.JsDataResult)pair.second;
+                    Log.i(TAG, "onCreate: "
+                            + TvSource.JScript.jsStart.name()
+                            + " " + data.toString());
+                    episode.upd = data.data.replace("T", " ").substring(0, 19);
+                    episode.urlHome = TvSource.urlHome();
+                    return dao.loadHistoryById(episode.url);
+                })
                 .onErrorResumeNext(error -> {
                     if (error instanceof EmptyResultSetException) {
-                        return Single.just(new Episode());
+                        return Observable.just(new Episode());
                     } else {
-                        return Single.error(error);
+                        return Observable.error(error);
                     }
                 })
-                .flatMap(ep -> {
+                .flatMapSingle(ep -> {
                     currentTime = ep.currentTime;
                     if (currentTime == null) {
                         Log.i(TAG, "play: insert History " + " - " + episode);
@@ -156,40 +144,31 @@ public class WebVideoActivity extends WebBaseActivity {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(num -> Log.i(TAG, "play: history = " + num),
                         error -> Log.e(TAG, "play: loadHistoryById", error));
-        play(webView, TvSource.jsVideoCmdTemplate("get_current_time", "null"));
-    }
 
-    @Override
-    void processJsGetCurrentTime(String s) {
-        String time = s.replace("jsVideoCMD-get_current_time-", "")
-                .replace("\"", "");
-        try {
-            if (Float.parseFloat(time) > 0) {
-                updateCurrentTimeDisposable = dao.updateCurrentTime(episode.url, time)
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(() -> Log.d(TAG, "vodDao updateCurrentTime " + episode.url + " - " + time),
-                                error -> Log.e(TAG, "play: updateCurrentTime", error));
-            }
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
-            Log.e(TAG, "jsGetCurrentTime NumberFormatException " + time);
-        }
-    }
+        updateCurrentTimeDisposable = TvSource.getScriptResultSubject()
+                .subscribeOn(Schedulers.io())
+                .filter(pair -> pair.first.equals(TvSource.JScmd.get_current_time.name()))
+                .flatMap(pair -> {
+                    WebAppInterface.JsDataResult data = (WebAppInterface.JsDataResult) pair.second;
+                    Log.d(TAG, "onCreate: updateCurrentTime " + data.data);
+                    return Observable.just(Math.round(Float.parseFloat(data.data)));
+                })
+                .filter(time -> time > 0)
+                .flatMapCompletable(time -> dao.updateCurrentTime(episode.url, time + ""))
+                .subscribe(() -> Log.i(TAG, "onCreate: updateCurrentTime subscribe " + episode.url + " OK "),
+                        error -> Log.e(TAG, "onCreate: get_current_time/update_current_time", error));
 
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        webView.setWebChromeClient(new WebVideoActivity.WebChromeClientCustom());
-        episode = (Episode) this.getIntent().getSerializableExtra("episode");
-        webView.loadUrl(episode.url);
-    }
-
-
-    public void showToast(String toast) {
-        Toast.makeText(this, toast, Toast.LENGTH_SHORT).show();
+        getCurrentTimeDisposable = TvSource.getVideoSubject()
+                .subscribeOn(Schedulers.computation())
+                .filter(event -> event.equals("timeupdate"))
+                .flatMap(Observable::just)
+//                .debounce(1000, TimeUnit.MILLISECONDS)
+                .throttleLast(10, TimeUnit.SECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(event -> {
+                    Log.i(TAG, "onCreate: timeupdate -> get_current_time");
+                    play(webView, TvSource.jsVideoCmdTemplate(TvSource.JScmd.get_current_time, "null"));
+                }, error -> Log.e(TAG, "onCreate: timeupdate", error) );
     }
 
     private long openedTime = 0;
@@ -218,7 +197,7 @@ public class WebVideoActivity extends WebBaseActivity {
             final String tm = text.getText().toString();
             Log.d(TAG, "onClick: " + tm);
             if (tm.length() > 0) {
-                play(webView, TvSource.jsVideoCmdTemplate("set_current_time", tm));
+                play(webView, TvSource.jsVideoCmdTemplate(TvSource.JScmd.set_current_time, tm));
             } else {
                 Toast.makeText(this, "ERROR currentTime", Toast.LENGTH_LONG).show();
             }
@@ -229,57 +208,5 @@ public class WebVideoActivity extends WebBaseActivity {
             di.dismiss();
         });
         builder.create().show();
-    }
-
-    class WebChromeClientCustom extends WebChromeClient {
-        private View mCustomView;
-        private WebChromeClient.CustomViewCallback mCustomViewCallback;
-        private int mOriginalOrientation;
-        private int mOriginalSystemUiVisibility;
-
-        public void onHideCustomView() {
-            ((FrameLayout) getWindow().getDecorView()).removeView(this.mCustomView);
-            this.mCustomView = null;
-            getWindow().getDecorView().setSystemUiVisibility(this.mOriginalSystemUiVisibility);
-            setRequestedOrientation(this.mOriginalOrientation);
-            this.mCustomViewCallback.onCustomViewHidden();
-            this.mCustomViewCallback = null;
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
-        }
-
-        @Override
-        public void onShowCustomView(View paramView, WebChromeClient.CustomViewCallback paramCustomViewCallback) {
-            if (this.mCustomView != null) {
-                onHideCustomView();
-                return;
-            }
-            this.mCustomView = paramView;
-            this.mOriginalSystemUiVisibility = getWindow().getDecorView().getSystemUiVisibility();
-            this.mOriginalOrientation = getRequestedOrientation();
-            this.mCustomViewCallback = paramCustomViewCallback;
-            ((FrameLayout) getWindow()
-                    .getDecorView())
-                    .addView(this.mCustomView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            WebVideoActivity.this.getWindow().getDecorView().setSystemUiVisibility(FULL_SCREEN_SETTING);
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
-            this.mCustomView.setOnSystemUiVisibilityChangeListener(visibility -> updateControls());
-        }
-
-        @Override
-        public Bitmap getDefaultVideoPoster() {
-            return Bitmap.createBitmap(10, 10, Bitmap.Config.ARGB_8888);
-        }
-
-        void updateControls() {
-            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) this.mCustomView.getLayoutParams();
-            params.bottomMargin = 0;
-            params.topMargin = 0;
-            params.leftMargin = 0;
-            params.rightMargin = 0;
-            params.height = ViewGroup.LayoutParams.MATCH_PARENT;
-            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-            this.mCustomView.setLayoutParams(params);
-            WebVideoActivity.this.getWindow().getDecorView().setSystemUiVisibility(FULL_SCREEN_SETTING);
-        }
     }
 }

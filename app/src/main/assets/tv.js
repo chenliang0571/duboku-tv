@@ -5,16 +5,12 @@ window.hello = function (msg = "test") {
 //window.jsClearTag();
 window.jsGetPlayer = function () {
     if (typeof window.jsGetVideoIframe == 'function') {
-        try {
-            const iframe = window.jsGetVideoIframe();
-            if (iframe) {
-                const video = iframe.contentWindow.document.querySelector('video');
-                return { iframe, video };
-            } else {
-                return 'jsGetPlayer-iframe-is-null';
-            }
-        } catch (error) {
-            return 'jsGetPlayer-exception';
+        const iframe = window.jsGetVideoIframe();
+        if (iframe) {
+            const video = iframe.contentWindow.document.querySelector('video');
+            return { iframe, video };
+        } else {
+            return 'jsGetPlayer-error-iframe-is-null';
         }
     } else {
         return 'jsGetVideoIframe-func-not-found';
@@ -27,12 +23,20 @@ window.jsStart = function () {
     }
     const player = window.jsGetPlayer();
     if (typeof player == 'string') {
-        return `jsStart-${player}`;
+        return JSON.stringify({code: 400, error: `jsStart-${player}`});
     } else {
+        //https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement
+        player.video.addEventListener('canplay', event => Android.onEvent(event.type));
+        player.video.addEventListener('durationchange', event => Android.onEvent(event.type));
+        player.video.addEventListener('ended', event => Android.onEvent(event.type));
+        player.video.addEventListener('error', event => Android.onEvent(event.type));
+        player.video.addEventListener('pause', event => Android.onEvent(event.type));
+        player.video.addEventListener('play', event => Android.onEvent(event.type));
+        player.video.addEventListener('timeupdate', event => Android.onEvent(event.type));
         player.iframe.style = 'position:fixed !important;top:0px !important;width:100% !important;'
             + 'height:100% !important;background:rgb(221,221,221);z-index:2147483647 !important;'
         player.video.play();
-        return 'jsStart-video-started-' + new Date().toISOString()
+        return JSON.stringify({code: 200, data: new Date().toISOString()});
     }
 }
 window.jsVideoCMD = function (cmd, arg=null) {
@@ -43,28 +47,29 @@ window.jsVideoCMD = function (cmd, arg=null) {
         switch (cmd) {
             case 'play':
                 player.video.play();
-                return `jsVideoCMD-${cmd}-ok`;
+                break;
             case 'pause':
                 player.video.pause();
-                return `jsVideoCMD-${cmd}-ok`;
+                break;
             case 'forward':
                 player.video.currentTime += 10;
-                return `jsVideoCMD-${cmd}-ok`;
+                break;
             case 'backward':
                 player.video.currentTime -= 10;
-                return `jsVideoCMD-${cmd}-ok`;
+                break;
             case 'get_current_time':
-                return `jsVideoCMD-${cmd}-${player.video.currentTime}`;
+                return JSON.stringify({code: 200, data: player.video.currentTime});
             case 'set_current_time':
                 if (Number(arg) > 0) {
                     player.video.currentTime = Number(arg);
-                    return `jsVideoCMD-${cmd}-${player.video.currentTime}`;
-                }
-                else {
-                    return 'jsVideoCMD-arg-required';
+                    break;
+                } else {
+                    return JSON.stringify({code: 400, error: 'jsVideoCMD-arg-required'});
                 }
             default:
-                return 'jsVideoCMD-unknown-cmd';
+                return JSON.stringify({code: 400, error: 'jsVideoCMD-unknown-cmd'});
         }
+        return JSON.stringify({code: 200});
     }
 }
+Android.onEvent('inject-script-ready');
