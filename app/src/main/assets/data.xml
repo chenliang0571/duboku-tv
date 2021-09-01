@@ -5,6 +5,7 @@
 duboku.com</title>
         <url_home>https://www.duboku.com/</url_home>
         <url_search><![CDATA[https://www.duboku.tv/vodsearch/-------------.html?submit=&wd=]]></url_search>
+        <episode_direction>asc</episode_direction>
         <js_get_video_iframe><![CDATA[
 window.jsGetVideoIframe = () => {
     return document.querySelector('iframe[src=\"/static/player/videojs.html\"]');
@@ -71,6 +72,7 @@ window.jsLoadEpisodes = () => {
 olevod.com</title>
         <url_home>https://www.olevod.com/</url_home>
         <url_search><![CDATA[https://www.olevod.com/index.php/vod/search.html?submit=&wd=]]></url_search>
+        <episode_direction>desc</episode_direction>
         <js_get_video_iframe><![CDATA[
 window.jsGetVideoIframe = () => {
     return document.querySelector('iframe[src=\"/static/player/plyr2.html\"]');

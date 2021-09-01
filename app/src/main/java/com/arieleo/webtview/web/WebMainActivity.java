@@ -80,8 +80,12 @@ public class WebMainActivity extends WebBaseActivity {
                     }
                 })
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(recent -> {
+                .subscribe(title -> {
+                    showToast(title);
                     webView.loadUrl(TvSource.urlHome());
-                }, error -> Log.e(TAG, "onCreate: initialize", error));
+                }, error -> {
+                    Log.e(TAG, "onCreate: initialize", error);
+                    showToast("ERROR: " + error);
+                });
     }
 }

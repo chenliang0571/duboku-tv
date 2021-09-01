@@ -1,6 +1,8 @@
 package com.arieleo.webtview.web;
 
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
@@ -34,7 +36,7 @@ import io.reactivex.schedulers.Schedulers;
 public class WebVideoActivity extends WebBaseActivity {
     private static final String TAG = "WebVideoActivity-DDD";
     private Episode episode;
-    private Integer currentTime;
+    private int currentTime = 0;
     private DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     @Override
@@ -118,6 +120,8 @@ public class WebVideoActivity extends WebBaseActivity {
         episode = (Episode) this.getIntent().getSerializableExtra("episode");
         webView.loadUrl(episode.url);
         df.setTimeZone(TimeZone.getTimeZone("UTC"));
+        Log.i(TAG, "onCreate: episode = " + episode.title);
+        showToast(episode.title);
 
         jsStartDisposable = TvSource.getScriptResultSubject()
                 .subscribeOn(Schedulers.io())
@@ -139,8 +143,9 @@ public class WebVideoActivity extends WebBaseActivity {
                 })
                 .flatMapSingle(ep -> {
                     Log.d(TAG, "onCreate: loadHistoryById " + " - " + episode);
-                    episode.currentTime = ep.currentTime;
-                    currentTime = ep.currentTime;
+                    int time = ep.currentTime == null ? 0 : ep.currentTime;
+                    episode.currentTime = time;
+                    currentTime = time;
                     return dao.insertHistory(episode);
                 })
                 .flatMapSingle(num -> {
@@ -187,6 +192,18 @@ public class WebVideoActivity extends WebBaseActivity {
                     Log.i(TAG, "onCreate: timeupdate -> get_current_time");
                     play(webView, TvSource.jsVideoCmdTemplate(TvSource.JScmd.get_current_time, "null"));
                 }, error -> Log.e(TAG, "onCreate: timeupdate", error) );
+
+        videoEndedDisposable = TvSource.getVideoSubject()
+                .subscribeOn(Schedulers.computation())
+                .filter(event -> event.equals("ended"))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(event -> {
+                    Log.i(TAG, "onCreate: ended");
+                    Intent intent = new Intent();
+                    intent.putExtra(TvSource.INTENT_ENDED, "OK");
+                    setResult(Activity.RESULT_OK, intent);
+                    finish();
+                }, error -> Log.e(TAG, "onCreate: ended", error) );
     }
 
     private long openedTime = 0;
@@ -198,14 +215,7 @@ public class WebVideoActivity extends WebBaseActivity {
             openedTime = System.currentTimeMillis();
         }
         int number = 0;
-        try {
-            if (currentTime != null && currentTime > 0) {
-                number = currentTime;
-            }
-        } catch (NumberFormatException e) {
-            number = 0;
-        }
-
+        if (currentTime > 0) number = currentTime;
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final EditText text = new EditText(this);
         text.setInputType(InputType.TYPE_CLASS_NUMBER);

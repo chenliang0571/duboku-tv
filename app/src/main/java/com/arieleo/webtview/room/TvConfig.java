@@ -21,6 +21,9 @@ public class TvConfig implements Serializable {
     @SerializedName("url_search")
     @ColumnInfo(name = "url_search")
     public String urlSearch;
+    @SerializedName("episode_direction")
+    @ColumnInfo(name = "episode_direction")
+    public String episodeDirection;
     @SerializedName("js_get_video_iframe")
     @ColumnInfo(name = "js_get_video_iframe")
     public String jsGetVideoIframe;
@@ -43,6 +46,7 @@ public class TvConfig implements Serializable {
                 "title='" + title + '\'' +
                 ", urlHome='" + urlHome + '\'' +
                 ", urlSearch='" + urlSearch + '\'' +
+                ", episodeDirection='" + episodeDirection + '\'' +
                 ", jsGetVideoIframe='" + jsGetVideoIframe + '\'' +
                 ", jsClearTag='" + jsClearTag + '\'' +
                 ", jsLoadMeta='" + jsLoadMeta + '\'' +

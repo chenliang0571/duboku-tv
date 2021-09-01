@@ -10,8 +10,8 @@ android {
         applicationId "com.arieleo.webtview2"
         minSdkVersion 21
         targetSdkVersion 30
-        versionCode 11
-        versionName "2.1"
+        versionCode 12
+        versionName "2.1.1"
     }
 
     signingConfigs {

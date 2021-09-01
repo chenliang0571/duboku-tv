@@ -34,6 +34,7 @@ public final class TvSource {
     public static final String INTENT_EPISODE = "episode";
     public static final String INTENT_EPISODES = "episodes";
     public static final String INTENT_SEARCH = "search";
+    public static final String INTENT_ENDED = "ended";
     private static final Pattern NOT_ALLOWED_JS_FUNC = Pattern
             .compile("\\beval\\s*\\(|\\bsetTimeout\\s*\\(|\\bsetInterval\\s*\\(|\\bcreateElement\\s*\\(");
     private static TvDataService dataService;
@@ -169,6 +170,10 @@ public final class TvSource {
 
     public static String urlSearch() {
         return config.urlSearch;
+    }
+
+    public static String episodeDirection() {
+        return config.episodeDirection;
     }
 
     /**

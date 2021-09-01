@@ -53,11 +53,16 @@ public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
 
     private static final long ACTION_PLAY = 1;
     private Action mActionPlay;
+    private static final long ACTION_PLAY_NEXT = 2;
+    private Action mActionPlayNext;
 
     private static final int DETAIL_THUMB_WIDTH = 274;
     private static final int DETAIL_THUMB_HEIGHT = 274;
 
     private Drama drama;
+    private Episode[] episodes;
+    private Episode currentEpisode;
+    private Episode nextEpisode;
 
     private ArrayObjectAdapter mAdapter;
     private ClassPresenterSelector mPresenterSelector;
@@ -75,16 +80,18 @@ public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
             setupDetailsOverviewRow();
             setupDetailsOverviewRowPresenter();
 
-            Episode[] episodes = (Episode[]) this.getActivity().getIntent().getSerializableExtra(TvSource.INTENT_EPISODES);
+            episodes = (Episode[]) this.getActivity().getIntent().getSerializableExtra(TvSource.INTENT_EPISODES);
             setupRelatedMovieListRow(episodes);
             List<Episode> list = Arrays.asList(episodes);
             Collections.reverse(list);
-            episodes = list.toArray(new Episode[0]);
-            setupRelatedMovieListRow(episodes);
+            setupRelatedMovieListRow(list.toArray(new Episode[0]));
 
             setAdapter(mAdapter);
             setOnItemViewClickedListener(new ItemViewClickedListener());
 
+            currentEpisode = "desc".equals(TvSource.episodeDirection())
+                    ? episodes[0] : episodes[episodes.length - 1];
+            nextEpisode = findNextEpisode(currentEpisode);
             //load history
             loadHistoryDisposable = AppDatabase.getInstance(getActivity().getApplicationContext())
                     .vodDao()
@@ -99,6 +106,11 @@ public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
                                     + " | " + (history.get(i).currentTime != null ?
                                     history.get(i).currentTime + "s" : ""));
                         }
+                        if(history.size() > 0) {
+                            currentEpisode = history.get(0);
+                            nextEpisode = findNextEpisode(currentEpisode);
+                            Log.d(TAG, "onCreate: currentEpisode " + currentEpisode + ", nextEpisode " + nextEpisode);
+                        }
                         //setupDetailsOverviewRow();
                         mAdapter.notifyArrayItemRangeChanged(0, mAdapter.size());
                     }, error -> Log.e(TAG, "onCreate: initialize", error));
@@ -106,6 +118,28 @@ public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
             Intent intent = new Intent(getActivity(), MainActivity.class);
             startActivity(intent);
         }
+    }
+
+    private Episode findNextEpisode(Episode current) {
+        Log.i(TAG, "current episode:  " + current.title);
+        if (current != null && episodes != null && episodes.length > 0) {
+            for (int i = 0; i < episodes.length; i++) {
+                if (current.url.equals(episodes[i].url)) {
+                    if ("desc".equals(TvSource.episodeDirection())) {
+                        if (i + 1 < episodes.length) {
+                            Log.i(TAG, "findNextEpisode: desc -> " + episodes[i + 1].title);
+                            return episodes[i + 1];
+                        }
+                    } else { //desc
+                        if (i - 1 >= 0) {
+                            Log.i(TAG, "findNextEpisode: asc -> " + episodes[i - 1].title);
+                            return episodes[i - 1];
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     @Override
@@ -118,10 +152,12 @@ public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        Log.d(TAG, "onActivityResult: " + requestCode);
         try {
-            if (requestCode == 123) {
-                Log.d(TAG, "onActivityResult: ");
+            if (requestCode == 123 && intent != null
+                    && intent.getSerializableExtra(TvSource.INTENT_ENDED) != null) {
+                String res = (String) intent.getSerializableExtra(TvSource.INTENT_ENDED);
+                Log.d(TAG, "onActivityResult: " + requestCode + " " + res);
+                play(nextEpisode);
             }
         } catch (Exception error) {
             error.printStackTrace();
@@ -152,6 +188,8 @@ public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
         ArrayObjectAdapter actionAdapter = new ArrayObjectAdapter();
         mActionPlay = new Action(ACTION_PLAY, getString(R.string.action_play));
         actionAdapter.add(mActionPlay);
+        mActionPlayNext = new Action(ACTION_PLAY_NEXT, getString(R.string.action_play_next));
+        actionAdapter.add(mActionPlayNext);
         row.setActionsAdapter(actionAdapter);
         mAdapter.add(row);
     }
@@ -170,9 +208,16 @@ public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
                 getActivity(), DetailsActivity.SHARED_ELEMENT_NAME);
         detailsPresenter.setListener(sharedElementHelper);
         detailsPresenter.setParticipatingEntranceTransition(true);
-
-        detailsPresenter.setOnActionClickedListener(action -> Toast.makeText(getActivity(),
-                action.toString() + " " + action.getId(), Toast.LENGTH_SHORT).show());
+        detailsPresenter.setOnActionClickedListener(action -> {
+            if(action.getId() == ACTION_PLAY) {
+                play(currentEpisode);
+            } else if(action.getId() == ACTION_PLAY_NEXT) {
+                play(nextEpisode);
+            } else {
+                Toast.makeText(getActivity(),
+                        action.toString() + " " + action.getId(), Toast.LENGTH_SHORT).show();
+            }
+        });
         mPresenterSelector.addClassPresenter(DetailsOverviewRow.class, detailsPresenter);
     }
 
@@ -187,6 +232,16 @@ public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
         ListRowPresenter listRowPresenter = new ListRowPresenter();
         listRowPresenter.setNumRows(2);
         mPresenterSelector.addClassPresenter(ListRow.class, listRowPresenter);
+    }
+
+    private void play(Episode episode) {
+        if(episode != null && episode.url != null) {
+            Intent intent = new Intent(getActivity(), WebVideoActivity.class);
+            intent.putExtra(TvSource.INTENT_EPISODE, episode);
+            startActivityForResult(intent, 123);
+        } else {
+            Toast.makeText(getActivity(), getString(R.string.action_play_error), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private int convertDpToPixel(Context context, int dp) {
@@ -214,12 +269,7 @@ public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
         public void onBindViewHolder(ViewHolder viewHolder, Object item) {
             Episode episode = (Episode) item;
             ((TextView) viewHolder.view).setText(episode.title);
-            viewHolder.view.setOnClickListener(v -> {
-                Intent intent = new Intent(getActivity(), WebVideoActivity.class);
-                intent.putExtra(TvSource.INTENT_EPISODE, episode);
-//                getActivity().startActivity(intent);
-                startActivityForResult(intent, 123);
-            });
+            viewHolder.view.setOnClickListener(v -> play(episode));
         }
 
         @Override

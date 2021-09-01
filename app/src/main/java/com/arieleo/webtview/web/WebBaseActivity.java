@@ -38,6 +38,7 @@ public abstract class WebBaseActivity extends FragmentActivity {
     protected Disposable jsSearchResultsDisposable;
     protected Disposable jsStartDisposable;
     protected Disposable getCurrentTimeDisposable;
+    protected Disposable videoEndedDisposable;
 
     abstract WebViewClient getCustomWebClient();
 
@@ -75,6 +76,7 @@ public abstract class WebBaseActivity extends FragmentActivity {
                 jsSearchResultsDisposable,
                 jsStartDisposable,
                 getCurrentTimeDisposable,
+                videoEndedDisposable,
         } ) {
             if(disposable != null && !disposable.isDisposed()) {
                 disposable.dispose();
@@ -95,7 +97,7 @@ public abstract class WebBaseActivity extends FragmentActivity {
         Log.v(TAG, "play: " + script);
         try {
             webView.evaluateJavascript(script, s -> {
-                Log.d(TAG, "evaluateJavascript: " + s);
+                Log.v(TAG, "evaluateJavascript: " + s);
                 if (s != null && s.contains("func-not-found")) {
                     Log.d(TAG, "replay: JS");
                     handler.postDelayed(() -> play(webView, script), 1000);
