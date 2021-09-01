@@ -17,9 +17,14 @@ import androidx.room.EmptyResultSetException;
 
 import com.arieleo.webtview.TvSource;
 import com.arieleo.webtview.room.Episode;
+import com.arieleo.webtview.room.Recent;
 
 import java.io.IOException;
 import java.net.URLConnection;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
@@ -29,7 +34,8 @@ import io.reactivex.schedulers.Schedulers;
 public class WebVideoActivity extends WebBaseActivity {
     private static final String TAG = "WebVideoActivity-DDD";
     private Episode episode;
-    private String currentTime = null;
+    private Integer currentTime;
+    private DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     @Override
     WebViewClient getCustomWebClient() {
@@ -111,6 +117,7 @@ public class WebVideoActivity extends WebBaseActivity {
         webView.setWebChromeClient(new WebVideoActivity.WebChromeClientCustom());
         episode = (Episode) this.getIntent().getSerializableExtra("episode");
         webView.loadUrl(episode.url);
+        df.setTimeZone(TimeZone.getTimeZone("UTC"));
 
         jsStartDisposable = TvSource.getScriptResultSubject()
                 .subscribeOn(Schedulers.io())
@@ -120,8 +127,7 @@ public class WebVideoActivity extends WebBaseActivity {
                     Log.i(TAG, "onCreate: "
                             + TvSource.JScript.jsStart.name()
                             + " " + data.toString());
-                    episode.upd = data.data.replace("T", " ").substring(0, 19);
-                    episode.urlHome = TvSource.urlHome();
+                    episode.upd = df.format(new Date());
                     return dao.loadHistoryById(episode.url);
                 })
                 .onErrorResumeNext(error -> {
@@ -132,30 +138,42 @@ public class WebVideoActivity extends WebBaseActivity {
                     }
                 })
                 .flatMapSingle(ep -> {
+                    Log.d(TAG, "onCreate: loadHistoryById " + " - " + episode);
+                    episode.currentTime = ep.currentTime;
                     currentTime = ep.currentTime;
-                    if (currentTime == null) {
-                        Log.i(TAG, "play: insert History " + " - " + episode);
-                        return dao.insertHistory(episode);
-                    } else {
-                        Log.i(TAG, "play: update History " + episode.url + episode.upd);
-                        return dao.updateUpd(episode.url, episode.upd);
-                    }
+                    return dao.insertHistory(episode);
                 })
+                .flatMapSingle(num -> {
+                    Log.i(TAG, "onCreate: insertHistory " + num);
+                    Recent recent = new Recent();
+                    recent.url = episode.dramaUrl;
+                    recent.upd = episode.upd;
+                    return dao.insertRecent(recent);
+                })
+                .delay(5, TimeUnit.SECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(num -> Log.i(TAG, "play: history = " + num),
-                        error -> Log.e(TAG, "play: loadHistoryById", error));
+                .subscribe(num -> {
+                            Log.i(TAG, "onCreate: insertRecent " + num);
+                            if(currentTime > 0) {
+                                play(webView, TvSource.jsVideoCmdTemplate(TvSource.JScmd.set_current_time, currentTime + ""));
+                            }
+                        },
+                        error -> Log.e(TAG, "onCreate: loadHistoryById ", error));
 
         updateCurrentTimeDisposable = TvSource.getScriptResultSubject()
                 .subscribeOn(Schedulers.io())
                 .filter(pair -> pair.first.equals(TvSource.JScmd.get_current_time.name()))
                 .flatMap(pair -> {
                     WebAppInterface.JsDataResult data = (WebAppInterface.JsDataResult) pair.second;
-                    Log.d(TAG, "onCreate: updateCurrentTime " + data.data);
+                    Log.d(TAG, "onCreate: get_current_time " + data.data);
                     return Observable.just(Math.round(Float.parseFloat(data.data)));
                 })
                 .filter(time -> time > 0)
-                .flatMapCompletable(time -> dao.updateCurrentTime(episode.url, time + ""))
-                .subscribe(() -> Log.i(TAG, "onCreate: updateCurrentTime subscribe " + episode.url + " OK "),
+                .flatMapSingle(time -> {
+                    episode.currentTime = time;
+                    return dao.insertHistory(episode);
+                })
+                .subscribe(num -> Log.i(TAG, "onCreate: insertHistory " + episode.url + " " + num),
                         error -> Log.e(TAG, "onCreate: get_current_time/update_current_time", error));
 
         getCurrentTimeDisposable = TvSource.getVideoSubject()
@@ -163,7 +181,7 @@ public class WebVideoActivity extends WebBaseActivity {
                 .filter(event -> event.equals("timeupdate"))
                 .flatMap(Observable::just)
 //                .debounce(1000, TimeUnit.MILLISECONDS)
-                .throttleLast(10, TimeUnit.SECONDS)
+                .throttleLast(20, TimeUnit.SECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(event -> {
                     Log.i(TAG, "onCreate: timeupdate -> get_current_time");
@@ -179,19 +197,19 @@ public class WebVideoActivity extends WebBaseActivity {
         } else {
             openedTime = System.currentTimeMillis();
         }
-        String number = "0";
+        int number = 0;
         try {
-            if (currentTime != null && Float.parseFloat(currentTime) > 0) {
+            if (currentTime != null && currentTime > 0) {
                 number = currentTime;
             }
         } catch (NumberFormatException e) {
-            number = "0";
+            number = 0;
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final EditText text = new EditText(this);
         text.setInputType(InputType.TYPE_CLASS_NUMBER);
-        text.setText(number);
+        text.setText(number + "");
         builder.setTitle("设置进度条（单位秒）").setView(text);
         builder.setPositiveButton("设置", (di, i) -> {
             final String tm = text.getText().toString();

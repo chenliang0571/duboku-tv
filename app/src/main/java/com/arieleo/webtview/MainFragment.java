@@ -30,7 +30,6 @@ import com.arieleo.webtview.web.WebDetailActivity;
 import com.arieleo.webtview.web.WebMainActivity;
 import com.arieleo.webtview.web.WebSearchActivity;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -44,7 +43,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class MainFragment extends BrowseFragment {
-    private static final String TAG = "MainFragment-DDDD";
+    private static final String TAG = "MainFragment-DDD";
 
     private static final int GRID_ITEM_WIDTH = 200;
     private static final int GRID_ITEM_HEIGHT = 200;
@@ -79,13 +78,13 @@ public class MainFragment extends BrowseFragment {
         setOnSearchClickedListener(view -> search());
         setOnItemViewClickedListener(new ItemViewClickedListener());
 
+        Log.d(TAG, "onActivityCreated: " + TvSource.urlHome());
         findRecentDisposable = AppDatabase.getInstance(getActivity().getApplicationContext())
                 .vodDao().findRecent(TvSource.urlHome())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(list -> {
-                            for (Drama d : list) d.category = "recent";
-                            Log.i(TAG, "onActivityCreated: findRecent " + list);
+                            Log.d(TAG, TvSource.urlHome() + " onActivityCreated: findRecent " + list);
                             updateRows(list.toArray(new Drama[0]));
                             loadRows();
                         },

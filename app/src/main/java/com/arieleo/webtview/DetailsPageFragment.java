@@ -11,7 +11,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
-import androidx.leanback.app.DetailsFragment;
 import androidx.leanback.widget.AbstractDetailsDescriptionPresenter;
 import androidx.leanback.widget.Action;
 import androidx.leanback.widget.ArrayObjectAdapter;
@@ -22,12 +21,12 @@ import androidx.leanback.widget.FullWidthDetailsOverviewSharedElementHelper;
 import androidx.leanback.widget.HeaderItem;
 import androidx.leanback.widget.ListRow;
 import androidx.leanback.widget.ListRowPresenter;
-import androidx.leanback.widget.OnActionClickedListener;
 import androidx.leanback.widget.OnItemViewClickedListener;
 import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.Row;
 import androidx.leanback.widget.RowPresenter;
 
+import com.arieleo.webtview.room.AppDatabase;
 import com.arieleo.webtview.room.Drama;
 import com.arieleo.webtview.room.Episode;
 import com.arieleo.webtview.web.WebVideoActivity;
@@ -40,31 +39,37 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import io.reactivex.Flowable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+
 /*
  * LeanbackDetailsFragment extends DetailsFragment, a Wrapper fragment for leanback details screens.
  * It shows a detailed view of video and its meta plus related videos.
  */
 public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
-    private static final String TAG = "VideoDetailsFragment";
+    private static final String TAG = "VideoDetailsFragmentDDD";
 
-    private static final int ACTION_WATCH_TRAILER = 1;
+    private static final long ACTION_PLAY = 1;
+    private Action mActionPlay;
 
     private static final int DETAIL_THUMB_WIDTH = 274;
     private static final int DETAIL_THUMB_HEIGHT = 274;
 
-    private Drama mSelectedMovie;
+    private Drama drama;
 
     private ArrayObjectAdapter mAdapter;
     private ClassPresenterSelector mPresenterSelector;
+    private Disposable loadHistoryDisposable;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate DetailsFragment");
         super.onCreate(savedInstanceState);
 
-        mSelectedMovie =
-                (Drama) getActivity().getIntent().getSerializableExtra(TvSource.INTENT_DRAMA);
-        if (mSelectedMovie != null) {
+        drama = (Drama) getActivity().getIntent().getSerializableExtra(TvSource.INTENT_DRAMA);
+        if (drama != null) {
             mPresenterSelector = new ClassPresenterSelector();
             mAdapter = new ArrayObjectAdapter(mPresenterSelector);
             setupDetailsOverviewRow();
@@ -79,21 +84,59 @@ public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
 
             setAdapter(mAdapter);
             setOnItemViewClickedListener(new ItemViewClickedListener());
+
+            //load history
+            loadHistoryDisposable = AppDatabase.getInstance(getActivity().getApplicationContext())
+                    .vodDao()
+                    .loadHistoryByDrama(drama.url)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(history -> {
+                        Log.d(TAG, "onCreate: loadHistoryByDrama " + history);
+                        drama.tag = "";
+                        for(int i = 0; i < history.size(); i ++) {
+                            drama.tag += ("\n" + history.get(i).title + " - " + history.get(i).upd
+                                    + " | " + (history.get(i).currentTime != null ?
+                                    history.get(i).currentTime + "s" : ""));
+                        }
+                        //setupDetailsOverviewRow();
+                        mAdapter.notifyArrayItemRangeChanged(0, mAdapter.size());
+                    }, error -> Log.e(TAG, "onCreate: initialize", error));
         } else {
             Intent intent = new Intent(getActivity(), MainActivity.class);
             startActivity(intent);
         }
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if(loadHistoryDisposable != null && !loadHistoryDisposable.isDisposed()) {
+            loadHistoryDisposable.dispose();
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        Log.d(TAG, "onActivityResult: " + requestCode);
+        try {
+            if (requestCode == 123) {
+                Log.d(TAG, "onActivityResult: ");
+            }
+        } catch (Exception error) {
+            error.printStackTrace();
+            Toast.makeText(getActivity(), error.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void setupDetailsOverviewRow() {
-        Log.d(TAG, "doInBackground: " + mSelectedMovie.toString());
-        final DetailsOverviewRow row = new DetailsOverviewRow(mSelectedMovie);
+        final DetailsOverviewRow row = new DetailsOverviewRow(drama);
         row.setImageDrawable(
                 ContextCompat.getDrawable(getActivity(), R.drawable.default_background));
         int width = convertDpToPixel(getActivity().getApplicationContext(), DETAIL_THUMB_WIDTH);
         int height = convertDpToPixel(getActivity().getApplicationContext(), DETAIL_THUMB_HEIGHT);
         Glide.with(getActivity())
-                .load(mSelectedMovie.image)
+                .load(drama.image)
                 .centerCrop()
                 .error(R.drawable.default_background)
                 .into(new SimpleTarget<GlideDrawable>(width, height) {
@@ -101,16 +144,15 @@ public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
                     public void onResourceReady(GlideDrawable resource,
                                                 GlideAnimation<? super GlideDrawable>
                                                         glideAnimation) {
-                        Log.d(TAG, "details overview card image url ready: " + resource);
                         row.setImageDrawable(resource);
                         mAdapter.notifyArrayItemRangeChanged(0, mAdapter.size());
                     }
                 });
 
         ArrayObjectAdapter actionAdapter = new ArrayObjectAdapter();
-
+        mActionPlay = new Action(ACTION_PLAY, getString(R.string.action_play));
+        actionAdapter.add(mActionPlay);
         row.setActionsAdapter(actionAdapter);
-
         mAdapter.add(row);
     }
 
@@ -145,10 +187,6 @@ public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
         ListRowPresenter listRowPresenter = new ListRowPresenter();
         listRowPresenter.setNumRows(2);
         mPresenterSelector.addClassPresenter(ListRow.class, listRowPresenter);
-
-//        VerticalGridPresenter gridPresenter = new VerticalGridPresenter();
-//        gridPresenter.setNumberOfColumns(10);
-//        mPresenterSelector.addClassPresenter(VerticalGridView.class, gridPresenter);
     }
 
     private int convertDpToPixel(Context context, int dp) {
@@ -179,7 +217,8 @@ public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
             viewHolder.view.setOnClickListener(v -> {
                 Intent intent = new Intent(getActivity(), WebVideoActivity.class);
                 intent.putExtra(TvSource.INTENT_EPISODE, episode);
-                getActivity().startActivity(intent);
+//                getActivity().startActivity(intent);
+                startActivityForResult(intent, 123);
             });
         }
 
@@ -194,20 +233,6 @@ public class DetailsPageFragment extends androidx.leanback.app.DetailsFragment {
                 Object item,
                 RowPresenter.ViewHolder rowViewHolder,
                 Row row) {
-
-//            if (item instanceof Drama) {
-//                Log.d(TAG, "Item: " + item.toString());
-//                Intent intent = new Intent(getActivity(), DetailsActivity.class);
-//                intent.putExtra(getResources().getString(R.string.movie), mSelectedMovie);
-//
-//                Bundle bundle =
-//                        ActivityOptionsCompat.makeSceneTransitionAnimation(
-//                                getActivity(),
-//                                ((ImageCardView) itemViewHolder.view).getMainImageView(),
-//                                DetailsActivity.SHARED_ELEMENT_NAME)
-//                                .toBundle();
-//                getActivity().startActivity(intent, bundle);
-//            }
             if(item instanceof Episode) {
                 Intent intent = new Intent(getActivity(), WebVideoActivity.class);
                 intent.putExtra(TvSource.INTENT_EPISODE, (Episode)item);

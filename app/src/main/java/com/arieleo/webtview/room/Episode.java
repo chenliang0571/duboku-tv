@@ -15,26 +15,18 @@ public class Episode implements Serializable {
     public String url;
     @NonNull
     public String title;
-    @NonNull
-    @ColumnInfo(name = "url_home")
-    public String urlHome;
     @ColumnInfo(name = "drama_url")
     public String dramaUrl;
-    @ColumnInfo(name = "drama_title")
-    public String dramaTitle;
-    @NonNull
     public String upd;
-    @ColumnInfo(name = "current_time")
-    public String currentTime;
+    @ColumnInfo(name = "current_time", defaultValue = "0")
+    public Integer currentTime;
 
     @Override
     public String toString() {
         return "Episode{" +
                 "url='" + url + '\'' +
                 ", title='" + title + '\'' +
-                ", urlHome='" + urlHome + '\'' +
                 ", dramaUrl='" + dramaUrl + '\'' +
-                ", dramaTitle='" + dramaTitle + '\'' +
                 ", upd='" + upd + '\'' +
                 ", currentTime='" + currentTime + '\'' +
                 '}';

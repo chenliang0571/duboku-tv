@@ -41,6 +41,7 @@ public class WebAppInterface {
         clsMap.put(TvSource.JScript.jsStart.name(), JsDataResult.class);
         clsMap.put(TvSource.JScmd.get_current_time.name(), JsDataResult.class);
         clsMap.put(TvSource.JScmd.set_current_time.name(), JsDataResult.class);
+        clsMap.put(TvSource.JScmd.get_duration.name(), JsDataResult.class);
     }
 
     /**

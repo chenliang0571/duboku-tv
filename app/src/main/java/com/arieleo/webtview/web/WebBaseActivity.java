@@ -30,7 +30,6 @@ public abstract class WebBaseActivity extends FragmentActivity {
     protected ProgressBar spinner;
     protected WebView webView;
     protected VodDao dao;
-    protected Disposable loadHistoryDisposable;
     protected Disposable initializeDisposable;
     protected Disposable loadHistoryByIdDisposable;
     protected Disposable updateCurrentTimeDisposable;
@@ -68,7 +67,6 @@ public abstract class WebBaseActivity extends FragmentActivity {
     protected void onDestroy() {
         handler.removeCallbacksAndMessages(null);
         for(Disposable disposable : new Disposable[] {
-                loadHistoryDisposable, 
                 initializeDisposable,
                 loadHistoryByIdDisposable,
                 updateCurrentTimeDisposable,
@@ -79,7 +77,6 @@ public abstract class WebBaseActivity extends FragmentActivity {
                 getCurrentTimeDisposable,
         } ) {
             if(disposable != null && !disposable.isDisposed()) {
-                Log.i(TAG, "onDestroy: disposable");
                 disposable.dispose();
             }
         }

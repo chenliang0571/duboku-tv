@@ -7,9 +7,7 @@ import androidx.room.Query;
 
 import java.util.List;
 
-import io.reactivex.Completable;
 import io.reactivex.Flowable;
-import io.reactivex.Maybe;
 import io.reactivex.Single;
 
 @Dao
@@ -25,26 +23,22 @@ public interface VodDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     Single<List<Long>> insertTvConfig(TvConfig... config);
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    Single<Long> insertRecent(Recent recent);
+
     @Query("DELETE FROM tv_config")
     Single<Integer> deleteAllTvConfig();
-
-    @Query("UPDATE history SET upd= :upd WHERE url =:url")
-    Single<Integer> updateUpd(String url, String upd);
-
-    @Query("UPDATE history SET `current_time` = :currentTime WHERE url =:url")
-    Completable updateCurrentTime(String url, String currentTime);
 
     @Query("SELECT * from history where url = :url LIMIT 1")
     Single<Episode> loadHistoryById(String url);
 
     @Query("SELECT * from history where drama_url = :url order by upd desc LIMIT 15")
-    Maybe<List<Episode>> loadHistoryByDrama(String url);
+    Flowable<List<Episode>> loadHistoryByDrama(String url);
 
-    @Query("SELECT distinct dramas.title,dramas.url,dramas.image,dramas.tag," +
-            "dramas.pic_text,dramas.category,dramas.more_url,history.upd, dramas.url_home " +
-            "FROM dramas inner join history on dramas.url = history.drama_url " +
-            "WHERE dramas.url_home = :urlHome " +
-            "group by dramas.url order by history.upd desc limit 50")
+    @Query("SELECT dramas.title, dramas.url, dramas.url_home, recent.upd, " +
+            "dramas.image, dramas.tag, dramas.pic_text, 'recent' as  category " +
+            "FROM dramas INNER JOIN recent on recent.url = dramas.url " +
+            "WHERE dramas.url_home = :urlHome order by recent.upd desc limit 50")
     Flowable<List<Drama>> findRecent(String urlHome);
 
     @Query("SELECT count(*) from tv_config")

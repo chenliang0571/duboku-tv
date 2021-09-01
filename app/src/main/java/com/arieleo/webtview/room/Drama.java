@@ -25,11 +25,8 @@ public class Drama implements Serializable {
     public String picText;
     @NonNull
     public String category;
-    @ColumnInfo(name = "more_url")
-    public String moreUrl;
+    @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")
     public String upd;
-    @Ignore
-    public String episodes;
 
     @Override
     public String toString() {
@@ -41,9 +38,7 @@ public class Drama implements Serializable {
                 ", tag='" + tag + '\'' +
                 ", picText='" + picText + '\'' +
                 ", category='" + category + '\'' +
-                ", moreUrl='" + moreUrl + '\'' +
                 ", upd='" + upd + '\'' +
-                ", episodes='" + episodes + '\'' +
                 '}';
     }
 }

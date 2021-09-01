@@ -33,10 +33,11 @@ window.jsStart = function () {
         player.video.addEventListener('pause', event => Android.onEvent(event.type));
         player.video.addEventListener('play', event => Android.onEvent(event.type));
         player.video.addEventListener('timeupdate', event => Android.onEvent(event.type));
+        player.video.addEventListener('loadedmetadata', event => Android.onEvent(event.type));
         player.iframe.style = 'position:fixed !important;top:0px !important;width:100% !important;'
             + 'height:100% !important;background:rgb(221,221,221);z-index:2147483647 !important;'
         player.video.play();
-        return JSON.stringify({code: 200, data: new Date().toISOString()});
+        return JSON.stringify({code: 200, data: `${player.video.duration}`});
     }
 }
 window.jsVideoCMD = function (cmd, arg=null) {
@@ -59,6 +60,8 @@ window.jsVideoCMD = function (cmd, arg=null) {
                 break;
             case 'get_current_time':
                 return JSON.stringify({code: 200, data: player.video.currentTime});
+            case 'get_duration':
+                return JSON.stringify({code: 200, data: player.video.duration});
             case 'set_current_time':
                 if (Number(arg) > 0) {
                     player.video.currentTime = Number(arg);

@@ -8,7 +8,6 @@ import android.webkit.WebViewClient;
 
 import com.arieleo.webtview.DetailsActivity;
 import com.arieleo.webtview.TvSource;
-import com.arieleo.webtview.room.AppDatabase;
 import com.arieleo.webtview.room.Drama;
 import com.arieleo.webtview.room.Episode;
 
@@ -58,7 +57,6 @@ public class WebDetailActivity extends WebBaseActivity {
                             + TvSource.JScript.jsLoadEpisodes.name()
                             + " " + data.length);
                     for (Episode datum : data) {
-                        datum.dramaTitle = drama.title;
                         datum.dramaUrl = drama.url;
                     }
                     Intent intent = new Intent(this, DetailsActivity.class);
@@ -68,18 +66,5 @@ public class WebDetailActivity extends WebBaseActivity {
                     startActivity(intent);
                     finish();
                 } );
-        //load history
-        loadHistoryDisposable = AppDatabase.getInstance(getApplicationContext())
-                .vodDao()
-                .loadHistoryByDrama(drama.url)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(history -> {
-                    Log.d(TAG, "vodDao loadHistoryById " + history.size());
-                    for(int i = 0; i < history.size(); i ++) {
-                        drama.tag += ("\n" + history.get(i).title + " - " + history.get(i).upd
-                                + " | " + history.get(i).currentTime);
-                    }
-                }, error -> Log.e(TAG, "onCreate: initialize", error));
     }
 }

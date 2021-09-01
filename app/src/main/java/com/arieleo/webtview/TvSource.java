@@ -150,10 +150,10 @@ public final class TvSource {
                             current = config.title;
                         }
                         Log.i(TAG, "initialize: current title => " + current);
-                        Log.i(TAG, "initialize: current config => " + config);
+                        Log.v(TAG, "initialize: current config => " + config);
                         return Single.just(current);
                     } else {
-                        Log.i(TAG, "initialize: config not found");
+                        Log.w(TAG, "initialize: config not found");
                         return Single.just("");
                     }
                 });
@@ -298,7 +298,8 @@ public final class TvSource {
         forward,
         backward,
         get_current_time,
-        set_current_time
+        set_current_time,
+        get_duration
     }
     public enum JScript {
         jsLoadMeta,
